@@ -1,18 +1,41 @@
 const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let mainWindow;
+let configData = {};
+
+// Load config.json from parent directory
+function loadConfig() {
+  try {
+    const configPath = path.join(__dirname, '..', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const rawData = fs.readFileSync(configPath, 'utf8');
+      const config = JSON.parse(rawData);
+      configData = config.overlay || {};
+      console.log('✅ Config loaded:', configData);
+      return true;
+    } else {
+      console.warn('⚠️  config.json not found, using defaults');
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error loading config:', error);
+    return false;
+  }
+}
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 280,
-    x: 50,
-    y: 50,
+  // Default settings dari config.json
+  const windowConfig = {
+    width: configData.width || 1200,
+    height: configData.height || 280,
+    x: configData.x || 50,
+    y: configData.y || 50,
     transparent: true,        // TRUE TRANSPARENCY ✅
     frame: false,             // Frameless window
-    alwaysOnTop: true,        // Always on top
-    resizable: true,          // Resizable
+    alwaysOnTop: configData.always_on_top !== false,  // From config or true
+    resizable: configData.resizable !== false,        // From config or true
     movable: true,            // Draggable (via IPC manual drag)
     skipTaskbar: false,       // Show in taskbar
     webPreferences: {
@@ -20,7 +43,10 @@ function createWindow() {
       contextIsolation: false,
       devTools: true          // Enable DevTools (F12)
     }
-  });
+  };
+
+  console.log('📐 Window config:', windowConfig);
+  mainWindow = new BrowserWindow(windowConfig);
 
   // Remove default menu completely
   mainWindow.setMenu(null);
@@ -69,7 +95,34 @@ function createWindow() {
   });
 
   ipcMain.on('stop-drag', () => {
-    // Drag ended
+    // Save window position when drag ends
+    if (mainWindow) {
+      const [x, y] = mainWindow.getPosition();
+      const [width, height] = mainWindow.getSize();
+      saveWindowPosition(x, y, width, height);
+    }
+  });
+
+  // Save position/size saat window di-resize
+  mainWindow.on('resized', () => {
+    if (mainWindow) {
+      const [x, y] = mainWindow.getPosition();
+      const [width, height] = mainWindow.getSize();
+      saveWindowPosition(x, y, width, height);
+    }
+  });
+
+  // Save position saat window dipindahkan (with debounce)
+  mainWindow.on('move', () => {
+    if (mainWindow) {
+      const [x, y] = mainWindow.getPosition();
+      const [width, height] = mainWindow.getSize();
+      // Only save periodically, not on every move (performance)
+      clearTimeout(mainWindow.positionSaveTimeout);
+      mainWindow.positionSaveTimeout = setTimeout(() => {
+        saveWindowPosition(x, y, width, height);
+      }, 500);
+    }
   });
 
   // Shortcut: Ctrl+W untuk close
@@ -118,8 +171,33 @@ function createWindow() {
   });
 }
 
+// Save window position to config.json
+function saveWindowPosition(x, y, width, height) {
+  try {
+    const configPath = path.join(__dirname, '..', 'config.json');
+    if (fs.existsSync(configPath)) {
+      const rawData = fs.readFileSync(configPath, 'utf8');
+      const config = JSON.parse(rawData);
+      
+      // Update overlay config
+      if (!config.overlay) config.overlay = {};
+      config.overlay.x = x;
+      config.overlay.y = y;
+      config.overlay.width = width;
+      config.overlay.height = height;
+      
+      // Write back to file
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
+      console.log(`✅ Position saved: x=${x}, y=${y}, w=${width}, h=${height}`);
+    }
+  } catch (error) {
+    console.error('❌ Error saving position:', error);
+  }
+}
+
 // Saat Electron ready
 app.whenReady().then(() => {
+  loadConfig();  // Load config before creating window
   createWindow();
 
   app.on('activate', () => {
