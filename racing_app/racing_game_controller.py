@@ -16,6 +16,9 @@ import sys
 import io
 import json
 import os
+import time
+import traceback
+import httpx
 from pynput.keyboard import Controller, Key
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import ConnectEvent, CommentEvent, DisconnectEvent
@@ -74,8 +77,30 @@ class RacingGameController:
         self.debug_mode = debug_mode
         self.game_name = game_name
         
-        # TikTok client
-        self.client = TikTokLiveClient(unique_id=unique_id)
+        # Anti-block: Use longer timeout to avoid connection issues
+        # Don't override default headers - TikTokLive library handles this smartly
+        httpx_kwargs = {
+            "timeout": httpx.Timeout(60.0, connect=15.0, read=45.0),
+            "follow_redirects": True,
+        }
+        
+        # WebSocket with retry-friendly settings
+        ws_kwargs = {
+            "ping_interval": 10,
+            "ping_timeout": 30,
+            "close_timeout": 10,
+        }
+        
+        # TikTok client with anti-block settings
+        web_kwargs = {
+            "httpx_kwargs": httpx_kwargs
+        }
+        
+        self.client = TikTokLiveClient(
+            unique_id=unique_id,
+            web_kwargs=web_kwargs,
+            ws_kwargs=ws_kwargs
+        )
         
         # Keyboard controller
         self.keyboard = Controller()
@@ -213,6 +238,23 @@ class RacingGameController:
         if user_cooldown.is_on_cooldown():
             return  # Ignore if too fast
         
+        # Handle key as list (from config.json) or string (from default mapping)
+        if isinstance(key, list):
+            # If it's a list with multiple keys, treat as combination
+            if len(key) > 1:
+                await self._hold_multiple_keys(key, self.movement_hold_duration)
+                user_cooldown.reset()
+                self._update_stats(command, user_id, username)
+                keys_text = " + ".join([k.upper() for k in key])
+                logger.info(f"{username:20} -> '{command:15}' => {keys_text} (held {self.movement_hold_duration}s)")
+                return
+            # If it's a single-item list, extract the string
+            elif len(key) == 1:
+                key = key[0]
+            else:
+                return  # Empty list, ignore
+        
+        # Now key is guaranteed to be a string
         # Check if this is a movement key that should be held
         if key in self.movement_keys:
             # Hold movement keys for 5 seconds
@@ -364,20 +406,74 @@ class RacingGameController:
             await self.client.disconnect()
     
     def run_blocking(self):
-        """Run blocking (synchronous)"""
-        try:
-            logger.info(f"[START] Racing Game Controller (Blocking)")
-            logger.info(f"Target: @{self.unique_id}")
-            logger.info(f"Debug Mode: {self.debug_mode}")
-            logger.info(f"Waiting for stream to go live...")
-            
-            self.client.run()
-            
-        except KeyboardInterrupt:
-            logger.info("Shutting down...")
-            self._print_stats()
+        """Run blocking (synchronous) with retry logic for anti-block"""
+        max_retries = 5
+        retry_count = 0
+        base_delay = 10  # Start with 10 seconds for first retry
+        initial_delay = 2  # Initial delay before first connection
         
-        except Exception as e:
+        # Wait a bit before first connection to avoid burst pattern
+        if initial_delay > 0:
+            logger.info(f"⏳ Waiting {initial_delay}s before connecting (anti-block delay)...")
+            time.sleep(initial_delay)
+        
+        while retry_count < max_retries:
+            try:
+                logger.info(f"[START] Racing Game Controller (Blocking)")
+                logger.info(f"Target: @{self.unique_id}")
+                logger.info(f"Debug Mode: {self.debug_mode}")
+                logger.info(f"Waiting for stream to go live...")
+                
+                self.client.run()
+                break  # Success, exit retry loop
+                
+            except KeyboardInterrupt:
+                logger.info("Shutting down...")
+                self._print_stats()
+                break
+            
+            except Exception as e:
+                error_msg = str(e)
+                
+                # Check if it's a blocking-related error
+                is_blocked = any([
+                    "DEVICE_BLOCKED" in error_msg,
+                    "blocked" in error_msg.lower(),
+                    "SIGI_STATE" in error_msg,
+                    "UnicodeDecodeError" in error_msg,
+                    "'utf-8' codec can't decode" in error_msg,
+                ])
+                
+                if is_blocked:
+                    retry_count += 1
+                    if retry_count >= max_retries:
+                        logger.error(f"❌ Maximum retries ({max_retries}) reached. Cannot bypass block.")
+                        logger.error("💡 Try these solutions:")
+                        logger.error("   1. Wait 30-60 minutes before trying again")
+                        logger.error("   2. Use MOCK mode for testing (no TikTok connection)")
+                        logger.error("   3. Try from a different network/IP address")
+                        logger.error("   4. Use VPN or proxy")
+                        logger.error("   5. Contact library maintainer for sign_api_key")
+                        self._print_stats()
+                        raise
+                    
+                    # Exponential backoff
+                    delay = base_delay * (2 ** (retry_count - 1))
+                    logger.warning(f"⚠️  TikTok blocking detected. Retry {retry_count}/{max_retries} in {delay}s...")
+                    logger.info(f"💡 Rotating session and waiting...")
+                    time.sleep(delay)
+                    
+                    # Recreate client with new session
+                    logger.info("🔄 Creating new session...")
+                    old_debug = self.debug_mode
+                    old_game = self.game_name
+                    self.__init__(self.unique_id, old_debug, old_game)
+                else:
+                    # Other errors, log and raise
+                    logger.error(f"Error: {e}")
+                    logger.error(traceback.format_exc())
+                    self._print_stats()
+                    raise
             logger.error(f"Fatal error: {e}", exc_info=True)
 
 

@@ -55,10 +55,14 @@ def get_debug_choice():
 def load_config(filename: str = "config.json") -> dict | None:
     """Load configuration from JSON file"""
     try:
-        if not os.path.exists(filename):
+        # Get the directory where launcher.py is located
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, filename)
+        
+        if not os.path.exists(config_path):
             return None
         
-        with open(filename, 'r', encoding='utf-8') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
         return config

@@ -23,6 +23,21 @@ TikTokLiveID/
 
 ## Quick Start
 
+⚠️ **CRITICAL: Anti-Block Warning**
+
+**DO NOT run this app on the same device/network as TikTok Live Studio!** TikTok will instantly block your account if you stream and run this controller from the same computer/IP.
+
+**✅ SAFE Setup:**
+- Stream: Computer A + WiFi 1
+- Controller: Computer B + WiFi 2 (or Mobile Hotspot)
+
+**❌ BLOCKED Setup:**
+- Stream + Controller on same device = **INSTANT BLOCK**
+
+See [racing_app/README.md](racing_app/README.md#-important-anti-block-warning) for detailed anti-block guide.
+
+---
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt
