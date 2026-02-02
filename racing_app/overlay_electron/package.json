@@ -1,0 +1,15 @@
+{
+  "name": "tiktok-racing-overlay",
+  "version": "1.0.0",
+  "description": "TikTok Racing Game Overlay with Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "install-electron": "npm install electron --save-dev"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  }
+}

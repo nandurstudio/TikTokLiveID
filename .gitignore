@@ -12,6 +12,20 @@ proto-testing
 all-proto
 headers.py
 
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
 # Runtime cache and logs
 racing_app/cache/
 racing_app/*.log
@@ -22,3 +36,13 @@ racing_app/*.log
 *.png
 *.jpg
 *.mp3
+
+# Electron
+racing_app/overlay_electron/node_modules/
+racing_app/overlay_electron/package-lock.json
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Teko:wght@500;700&family=Bangers&display=swap');
+
+        body {
+            margin: 0;
+            padding: 2vh 2vw;
+            background-color: transparent;
+            font-family: 'Teko', sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            pointer-events: auto; /* Ensure body can receive events */
+        }
+        
+        /* Prevent default context menu on ALL elements */
+        * {
+            -webkit-context-menu: none;
+            pointer-events: auto;
+            cursor: default; /* Normal cursor everywhere */
+        }
+        
+        /* Manual drag with normal cursor */
+        body.dragging, body.dragging * {
+            cursor: move !important;
+        }
+
+        /* Interactive elements */
+        .key-box, .resize-indicator {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .key-box {
+            cursor: default !important;
+        }
+        
+        .resize-indicator {
+            cursor: inherit !important;
+        }
+
+        /* --- RESIZE INDICATORS - Auto hide after 3s --- */
+        .resize-indicator {
+            position: fixed;
+            background: #00eaff;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+            pointer-events: auto;
+        }
+
+        .resize-indicator.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .resize-indicator:hover {
+            opacity: 0.7;
+        }
+
+        /* Corner indicators - responsive */
+        .resize-nw { top: 0; left: 0; width: 1.5vw; height: 1.5vw; min-width: 12px; min-height: 12px; cursor: nw-resize; }
+        .resize-ne { top: 0; right: 0; width: 1.5vw; height: 1.5vw; min-width: 12px; min-height: 12px; cursor: ne-resize; }
+        .resize-sw { bottom: 0; left: 0; width: 1.5vw; height: 1.5vw; min-width: 12px; min-height: 12px; cursor: sw-resize; }
+        .resize-se { bottom: 0; right: 0; width: 1.5vw; height: 1.5vw; min-width: 12px; min-height: 12px; cursor: se-resize; }
+
+        /* Edge indicators - responsive */
+        .resize-n { top: 0; left: 50%; transform: translateX(-50%); width: 5vw; min-width: 40px; height: 0.5vh; min-height: 4px; cursor: n-resize; }
+        .resize-s { bottom: 0; left: 50%; transform: translateX(-50%); width: 5vw; min-width: 40px; height: 0.5vh; min-height: 4px; cursor: s-resize; }
+        .resize-w { left: 0; top: 50%; transform: translateY(-50%); width: 0.5vw; min-width: 4px; height: 5vh; min-height: 40px; cursor: w-resize; }
+        .resize-e { right: 0; top: 50%; transform: translateY(-50%); width: 0.5vw; min-width: 4px; height: 5vh; min-height: 40px; cursor: e-resize; }
+
+        /* --- CLOSE BUTTON - Responsive - HIDDEN --- */
+        .close-btn {
+            display: none;
+        }
+
+        /* --- JUDUL HEADER - Responsive --- */
+        .header-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: -1vh;
+            z-index: 2;
+            text-shadow: 2px 2px 0px #000;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .main-title {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(24px, 4vw, 48px);
+            color: #fff;
+            -webkit-text-stroke: 1.5px #000;
+            background: linear-gradient(180deg, #ffeb3b 0%, #ff9800 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            filter: drop-shadow(0 5px 0 rgba(0, 0, 0, 0.5));
+            transform: rotate(-2deg);
+        }
+
+        .sub-title {
+            font-family: 'Teko', sans-serif;
+            font-size: clamp(16px, 2.5vw, 28px);
+            font-weight: 700;
+            color: #fff;
+            background-color: #ff0055;
+            padding: 0.3vh 2vw;
+            border-radius: 50px;
+            border: 3px solid #fff;
+            margin-top: -1vh;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: 0 5px 15px rgba(255, 0, 85, 0.4);
+            transform: rotate(1deg);
+        }
+
+        /* Animasi Header Melayang */
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        /* --- BAR INSTRUKSI - Responsive --- */
+        .guide-bar {
+            display: flex;
+            gap: 0;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.95) 0%, rgba(25, 25, 25, 0.98) 50%, rgba(0, 0, 0, 0.95) 100%);
+            padding: 2vh 1.5vw 1vh 1.5vw;
+            border: 2px solid #444;
+            border-bottom: 5px solid #00eaff;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            align-items: flex-end;
+            width: 95%;
+            max-width: 1200px;
+        }
+
+        .instruction-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 1.5vw;
+            border-right: 1px solid rgba(255, 255, 255, 0.15);
+            flex: 1;
+            min-width: 60px;
+        }
+
+        .instruction-item:last-child {
+            border-right: none;
+        }
+
+        .action-label {
+            font-size: clamp(16px, 2vw, 26px);
+            color: #00eaff;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px rgba(0, 234, 255, 0.6);
+            letter-spacing: 0.05em;
+            text-align: center;
+            line-height: 1.1;
+            font-weight: 700;
+        }
+
+        .action-label span {
+            display: block;
+            font-size: clamp(10px, 1.2vw, 14px);
+            color: #999;
+            font-weight: 500;
+            margin-top: 0.3vh;
+            margin-bottom: 0.8vh;
+            letter-spacing: 0.1em;
+        }
+
+        .key-box {
+            background: linear-gradient(180deg, #333, #1a1a1a);
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 0.2vh 1vw;
+            border-radius: 6px;
+            font-size: clamp(20px, 3vw, 36px);
+            line-height: 1.2;
+            font-weight: 700;
+            min-width: 32px;
+            text-align: center;
+            box-shadow: 0 4px 0 #000;
+            transform: translateY(-2px);
+        }
+
+        /* WARNA TOMBOL */
+        .gas .key-box {
+            border-color: #00ff9d;
+            color: #00ff9d;
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.3), 0 4px 0 #00331f;
+        }
+
+        .brake .key-box {
+            border-color: #ff3d00;
+            color: #ff3d00;
+            box-shadow: 0 0 10px rgba(255, 61, 0, 0.3), 0 4px 0 #330a00;
+        }
+
+        .drift .key-box {
+            border-color: #ffeb3b;
+            color: #ffeb3b;
+            font-size: 26px;
+            padding: 4px 8px;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.3), 0 4px 0 #332f00;
+        }
+
+        .nitro .key-box {
+            border-color: #ff0055;
+            color: #ff0055;
+            font-size: 26px;
+            padding: 4px 8px;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4), 0 4px 0 #330011;
+            animation: pulse 1.5s infinite;
+        }
+
+        .util .key-box {
+            font-size: 26px;
+            border-color: #aaa;
+            color: #aaa;
+            box-shadow: 0 4px 0 #222;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1) translateY(-2px);
+            }
+
+            50% {
+                transform: scale(1.05) translateY(-2px);
+                filter: brightness(1.3);
+            }
+
+            100% {
+                transform: scale(1) translateY(-2px);
+            }
+        }
+        
+        /* Pin indicator */
+        .pin-indicator {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00eaff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            z-index: 9999;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            -webkit-app-region: no-drag;
+        }
+        
+        .pin-indicator.pinned {
+            background: rgba(0, 234, 255, 0.3);
+            border-color: #00eaff;
+            box-shadow: 0 0 10px rgba(0, 234, 255, 0.5);
+        }
+        
+        .pin-indicator.unpinned {
+            background: rgba(255, 61, 0, 0.3);
+            border-color: #ff3d00;
+            box-shadow: 0 0 10px rgba(255, 61, 0, 0.5);
+        }
+        
+        .pin-indicator:hover {
+            transform: scale(1.1);
+        }
+        
+        /* Version and Copyright Footer */
+        .footer {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'Teko', sans-serif;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            z-index: 9998;
+            pointer-events: none;
+            line-height: 1.4;
+        }
+        
+        .footer .version {
+            color: #00eaff;
+        }
+        
+        .footer .copyright {
+            color: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Version & Copyright Footer -->
+    <div class="footer">
+        <div class="version">v1.0.0</div>
+        <div class="copyright">©2026 @nandurstudio</div>
+    </div>
+    
+    <!-- Pin Indicator -->
+    <div class="pin-indicator pinned" id="pinIndicator" title="Click to toggle always-on-top (Ctrl+T)">📌</div>
+    
+    <!-- Resize Indicators - Auto hide after 3 seconds -->
+    <div class="resize-indicator resize-nw"></div>
+    <div class="resize-indicator resize-ne"></div>
+    <div class="resize-indicator resize-sw"></div>
+    <div class="resize-indicator resize-se"></div>
+    <div class="resize-indicator resize-n"></div>
+    <div class="resize-indicator resize-s"></div>
+    <div class="resize-indicator resize-w"></div>
+    <div class="resize-indicator resize-e"></div>
+
+    <div class="header-container">
+        <div class="main-title">SUPIRNYA ADA 1000 😱</div>
+        <div class="sub-title">TAPI MOBILNYA CUMA SATU! 🚗💥</div>
+    </div>
+
+    <div class="guide-bar">
+        <div class="instruction-item gas">
+            <div class="action-label">MAJU<span>KETIK</span></div>
+            <div class="key-box">W</div>
+        </div>
+        <div class="instruction-item brake">
+            <div class="action-label">REM<span>KETIK</span></div>
+            <div class="key-box">S</div>
+        </div>
+        <div class="instruction-item">
+            <div class="action-label">KIRI<span>KETIK</span></div>
+            <div class="key-box">A</div>
+        </div>
+        <div class="instruction-item">
+            <div class="action-label">KANAN<span>KETIK</span></div>
+            <div class="key-box">D</div>
+        </div>
+        <div class="instruction-item drift">
+            <div class="action-label">DRIFT<span>KETIK</span></div>
+            <div class="key-box">SPACE</div>
+        </div>
+        <div class="instruction-item nitro">
+            <div class="action-label" style="color:#ff0055;">NOS<span>KETIK</span></div>
+            <div class="key-box">SHIFT</div>
+        </div>
+        <div class="instruction-item util">
+            <div class="action-label">TIN<span>KETIK</span></div>
+            <div class="key-box">H</div>
+        </div>
+        <div class="instruction-item util">
+            <div class="action-label">CAM<span>KETIK</span></div>
+            <div class="key-box">V</div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        // Auto-hide resize indicators after 3 seconds
+        let hideTimeout;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        const resizeIndicators = document.querySelectorAll('.resize-indicator');
+        
+        function hideResizeIndicators() {
+            if (!isDragging) {
+                resizeIndicators.forEach(indicator => {
+                    indicator.classList.add('hidden');
+                });
+            }
+        }
+        
+        function showResizeIndicators() {
+            resizeIndicators.forEach(indicator => {
+                indicator.classList.remove('hidden');
+            });
+            
+            // Clear existing timeout
+            if (hideTimeout) clearTimeout(hideTimeout);
+            
+            // Set new timeout to hide after 3 seconds (only if not dragging)
+            if (!isDragging) {
+                hideTimeout = setTimeout(hideResizeIndicators, 3000);
+            }
+        }
+        
+        // Manual window dragging with IPC
+        document.addEventListener('mousedown', (e) => {
+            // NEVER drag on right-click (button 2)
+            if (e.button === 2) {
+                return;
+            }
+            
+            // Close context menu on left-click (if exists and not clicking on menu)
+            if (e.button === 0 && activeMenu && !activeMenu.contains(e.target)) {
+                activeMenu.remove();
+                activeMenu = null;
+                return; // Don't start drag after closing menu
+            }
+            
+            const resizeIndicators = document.querySelectorAll('.resize-indicator');
+            const isOnResizeIndicator = Array.from(resizeIndicators).some(r => r.contains(e.target));
+            
+            // Skip resize indicators
+            if (isOnResizeIndicator) {
+                return;
+            }
+            
+            // Skip key-box, context menu, and pin indicator
+            const nonDraggableElements = e.target.closest('.key-box, .context-menu, #pinIndicator');
+            if (nonDraggableElements) {
+                return;
+            }
+            
+            // Start drag
+            isDragging = true;
+            dragStartX = e.screenX;
+            dragStartY = e.screenY;
+            document.body.classList.add('dragging');
+            showResizeIndicators();
+            
+            // Send start-drag to main process
+            ipcRenderer.send('start-drag', { x: e.screenX, y: e.screenY });
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+                const deltaX = e.screenX - dragStartX;
+                const deltaY = e.screenY - dragStartY;
+                
+                // Send drag delta to main process
+                ipcRenderer.send('dragging', { deltaX, deltaY });
+                
+                dragStartX = e.screenX;
+                dragStartY = e.screenY;
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.body.classList.remove('dragging');
+                // Start hide timer when drag ends
+                hideTimeout = setTimeout(hideResizeIndicators, 3000);
+                
+                // Send stop-drag to main process
+                ipcRenderer.send('stop-drag');
+            }
+        });
+        
+        // Show indicators on window resize
+        window.addEventListener('resize', showResizeIndicators);
+        
+        // Initial hide after 3 seconds
+        hideTimeout = setTimeout(hideResizeIndicators, 3000);
+
+        // Right-click context menu - WINDOW LEVEL to override drag regions
+        let activeMenu = null;
+        
+        // Use WINDOW level listener with capture:true to override ALL other listeners including -webkit-app-region:drag
+        window.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            console.log('✅ Context menu at:', e.clientX, e.clientY, 'Element:', e.target.tagName, e.target.className);
+            
+            // Remove existing menu if any
+            if (activeMenu) {
+                activeMenu.remove();
+                activeMenu = null;
+            }
+            
+            const menu = document.createElement('div');
+            menu.className = 'context-menu';
+            
+            // Calculate position to prevent cutoff
+            const menuWidth = 160;
+            const menuHeight = 120; // Approximate height for 4 items
+            let menuX = e.clientX;
+            let menuY = e.clientY;
+            
+            // Adjust if menu would go off-screen
+            if (menuX + menuWidth > window.innerWidth) {
+                menuX = window.innerWidth - menuWidth - 10;
+            }
+            if (menuY + menuHeight > window.innerHeight) {
+                menuY = window.innerHeight - menuHeight - 10;
+            }
+            
+            menu.style.cssText = `
+                position: fixed;
+                left: ${menuX}px;
+                top: ${menuY}px;
+                background: rgba(0, 0, 0, 0.95);
+                border: 2px solid #00eaff;
+                border-radius: 6px;
+                padding: 4px 0;
+                min-width: 160px;
+                z-index: 999999;
+                font-family: 'Teko', sans-serif;
+                color: white;
+                -webkit-app-region: no-drag;
+                pointer-events: auto;
+                box-shadow: 0 4px 20px rgba(0, 234, 255, 0.5);
+            `;
+            
+            const items = [
+                { label: 'Resize (Ctrl+R)', action: () => { showResizeIndicators(); if (activeMenu) { activeMenu.remove(); activeMenu = null; } } },
+                { label: 'Close (Ctrl+W)', action: closeWindow },
+                { label: 'Minimize (Ctrl+M)', action: minimizeWindow },
+                { label: 'Toggle Top (Ctrl+T)', action: toggleAlwaysOnTop }
+            ];
+            
+            items.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.style.cssText = `
+                    padding: 6px 12px;
+                    cursor: pointer;
+                    user-select: none;
+                    -webkit-user-select: none;
+                    font-size: 12px;
+                    ${idx < items.length - 1 ? 'border-bottom: 1px solid #333;' : ''}
+                    transition: background 0.15s, color 0.15s;
+                    -webkit-app-region: no-drag;
+                `;
+                div.textContent = item.label;
+                div.onmouseenter = () => {
+                    div.style.background = '#00eaff';
+                    div.style.color = '#000';
+                };
+                div.onmouseleave = () => {
+                    div.style.background = 'transparent';
+                    div.style.color = 'white';
+                };
+                div.onclick = (clickEvent) => {
+                    clickEvent.stopPropagation();
+                    clickEvent.stopImmediatePropagation();
+                    clickEvent.preventDefault();
+                    
+                    // Execute action
+                    try {
+                        item.action();
+                    } catch (err) {
+                        console.error('Menu action error:', err);
+                    }
+                    
+                    // Close menu
+                    if (activeMenu) {
+                        activeMenu.remove();
+                        activeMenu = null;
+                    }
+                };
+                menu.appendChild(div);
+            });
+            
+            document.body.appendChild(menu);
+            activeMenu = menu;
+            
+            // Prevent menu from closing immediately
+            e.stopPropagation();
+        }, true); // Use capture phase
+        
+        // Also close menu on Escape key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && activeMenu) {
+                activeMenu.remove();
+                activeMenu = null;
+            }
+        });
+        
+        // Window controls
+        function closeWindow() {
+            ipcRenderer.send('close-window');
+        }
+
+        function minimizeWindow() {
+            ipcRenderer.send('minimize-window');
+        }
+
+        function toggleAlwaysOnTop() {
+            ipcRenderer.send('toggle-always-on-top');
+        }
+        
+        // Pin indicator functionality
+        const pinIndicator = document.getElementById('pinIndicator');
+        
+        // Update pin indicator based on always-on-top status
+        function updatePinIndicator(isPinned) {
+            if (isPinned) {
+                pinIndicator.classList.add('pinned');
+                pinIndicator.classList.remove('unpinned');
+                pinIndicator.textContent = '📌';
+                pinIndicator.title = 'Pinned (Always on top) - Click to unpin (Ctrl+T)';
+            } else {
+                pinIndicator.classList.remove('pinned');
+                pinIndicator.classList.add('unpinned');
+                pinIndicator.textContent = '📍';
+                pinIndicator.title = 'Unpinned - Click to pin (Ctrl+T)';
+            }
+        }
+        
+        // Listen for always-on-top changes from main process
+        ipcRenderer.on('always-on-top-changed', (event, isPinned) => {
+            updatePinIndicator(isPinned);
+        });
+        
+        // Click on pin indicator to toggle
+        pinIndicator.addEventListener('click', () => {
+            toggleAlwaysOnTop();
+        });
+        
+        // Initialize with pinned state (default)
+        updatePinIndicator(true);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+W: Close
+            if (e.ctrlKey && (e.key === 'w' || e.key === 'W')) {
+                e.preventDefault();
+                closeWindow();
+                return false;
+            }
+
+            // Ctrl+M: Minimize
+            if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+                e.preventDefault();
+                minimizeWindow();
+                return false;
+            }
+
+            // Ctrl+T: Toggle always on top
+            if (e.ctrlKey && (e.key === 't' || e.key === 'T')) {
+                e.preventDefault();
+                toggleAlwaysOnTop();
+                return false;
+            }
+            
+            // Ctrl+R: Show resize indicators
+            if (e.ctrlKey && (e.key === 'r' || e.key === 'R')) {
+                e.preventDefault();
+                showResizeIndicators();
+                return false;
+            }
+            
+            // Escape: Hide resize indicators OR close context menu
+            if (e.key === 'Escape') {
+                if (activeMenu) {
+                    activeMenu.remove();
+                    activeMenu = null;
+                } else {
+                    hideResizeIndicators();
+                }
+            }
+        });
+
+        console.log('✅ Overlay controls loaded');
+        console.log('   • Press Ctrl+W to close');
+        console.log('   • Press Ctrl+M to minimize');
+        console.log('   • Press Ctrl+T to toggle always-on-top');
+        console.log('   • Press Ctrl+R to show resize indicators');
+        console.log('   • Press Escape to hide resize indicators');
+        console.log('   • Drag anywhere to move window');
+        console.log('   • Right-click for menu');
+    </script>
+
+</body>
+
+</html>

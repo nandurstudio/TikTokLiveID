@@ -1,16 +1,34 @@
 """
 Racing Game Controller - Unified Launcher
-Single entry point for all modes: Real/Mock x Debug/Production
+Single entry point: Overlay always runs + Menu to select game mode
 """
 
 import asyncio
 import sys
 import os
 import json
+import subprocess
+import time
+import logging
 
 # Force UTF-8 output on Windows
 import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
+
+def save_config(config: dict, filename: str = "config.json"):
+    """Save configuration to JSON file"""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, filename)
+        
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2, ensure_ascii=False)
+        
+        return True
+    except Exception as e:
+        print(f"[WARNING] Failed to save config: {e}")
+        return False
 
 
 def print_banner():
@@ -20,36 +38,59 @@ def print_banner():
     print("="*70 + "\n")
 
 
-def get_mode_choice():
-    """Ask user: Real TikTok or Mock?"""
+def get_mode_choice(config: dict):
+    """Ask user: Real TikTok or Mock? (Overlay always runs)"""
     print("SELECT MODE")
     print("-" * 70)
     print("1. REAL TikTok       - Connect to actual TikTok LIVE stream")
     print("2. MOCK              - Test with simulated viewers (no internet)")
+    print("3. EXIT              - Close the launcher & overlay")
     print()
     
+    last_mode = config.get("last_session", {}).get("mode")
+    if last_mode and last_mode != "overlay":
+        last_mode_num = {"real": "1", "mock": "2"}.get(last_mode, "1")
+        print(f"[LAST] {last_mode_num}. {last_mode.upper()}")
+        print()
+    
     while True:
-        choice = input("Choose mode (1 or 2): ").strip()
-        if choice in ['1', '2']:
-            return 'real' if choice == '1' else 'mock'
-        print("[ERROR] Invalid choice. Please enter 1 or 2")
+        choice = input("Choose mode (1, 2, or 3): ").strip()
+        if choice in ['1', '2', '3']:
+            mode_map = {'1': 'real', '2': 'mock', '3': 'exit'}
+            selected = mode_map[choice]
+            # Save last session
+            if "last_session" not in config:
+                config["last_session"] = {}
+            if selected != 'exit':
+                config["last_session"]["mode"] = selected
+            return selected
+        print("[ERROR] Invalid choice. Please enter 1, 2, or 3")
 
 
-def get_debug_choice():
+def get_debug_choice(config: dict):
     """Ask user: Debug or Production?"""
     print("\nSELECT DEBUG MODE")
     print("-" * 70)
-    print("Debug Mode       - Safe testing (NO actual keyboard input)")
-    print("Production Mode  - Real keyboard input to game")
+    print("1. DEBUG Mode        - Safe testing (NO actual keyboard input)")
+    print("2. PRODUCTION Mode   - Real keyboard input to game")
+    print()
+    
+    last_debug = config.get("last_session", {}).get("debug_mode", False)
+    last_debug_num = "1" if last_debug else "2"
+    debug_text = "DEBUG (Safe)" if last_debug else "PRODUCTION (Real)"
+    print(f"[LAST] {last_debug_num}. {debug_text}")
     print()
     
     while True:
-        choice = input("Use DEBUG mode? (yes/no): ").strip().lower()
-        if choice in ['yes', 'y', '1']:
-            return True
-        elif choice in ['no', 'n', '0']:
-            return False
-        print("[ERROR] Invalid choice. Please enter yes or no")
+        choice = input("Choose debug mode (1 or 2): ").strip()
+        if choice in ['1', '2']:
+            debug_mode = choice == '1'
+            # Save last session
+            if "last_session" not in config:
+                config["last_session"] = {}
+            config["last_session"]["debug_mode"] = debug_mode
+            return debug_mode
+        print("[ERROR] Invalid choice. Please enter 1 or 2")
 
 
 def load_config(filename: str = "config.json") -> dict | None:
@@ -78,13 +119,14 @@ def get_game_choice(config: dict):
     
     games = list(config.get("games", {}).keys())
     active_game = config.get("active_game", games[0] if games else None)
+    last_game = config.get("last_session", {}).get("game", active_game)
     
     if not games:
         print("[ERROR] No games configured in config.json")
         return None
     
     for i, game in enumerate(games, 1):
-        marker = " [CURRENT]" if game == active_game else ""
+        marker = " [LAST PLAYED]" if game == last_game else ""
         print(f"{i}. {game}{marker}")
     
     print()
@@ -94,14 +136,63 @@ def get_game_choice(config: dict):
             choice = input(f"Choose game (1-{len(games)}): ").strip()
             idx = int(choice) - 1
             if 0 <= idx < len(games):
-                return games[idx]
+                selected = games[idx]
+                # Save last session
+                if "last_session" not in config:
+                    config["last_session"] = {}
+                config["last_session"]["game"] = selected
+                return selected
         except ValueError:
             pass
         
         print(f"[ERROR] Invalid choice. Please enter 1-{len(games)}")
 
 
-def run_real_mode(debug_mode):
+def run_overlay_background():
+    """Start overlay as background process (non-blocking)"""
+    try:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        overlay_file = os.path.join(script_dir, "live_overlay_electron.py")
+        
+        # Kill any existing overlay processes first
+        print("[INFO] 🔍 Checking for existing overlay...")
+        try:
+            import psutil
+            for proc in psutil.process_iter(['name', 'cmdline']):
+                try:
+                    # Check if it's electron process running our overlay
+                    if proc.info['name'] and 'electron' in proc.info['name'].lower():
+                        cmdline = proc.info.get('cmdline', [])
+                        if cmdline and any('live-instruction-electron.html' in str(arg) for arg in cmdline):
+                            print(f"[INFO] 🛑 Killing existing overlay (PID: {proc.pid})...")
+                            proc.kill()
+                            proc.wait(timeout=3)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+        except Exception as e:
+            print(f"[WARNING] Could not check for existing overlay: {e}")
+        
+        print("[INFO] 🎮 Starting live instruction overlay (Electron)...")
+        
+        # Start as background process (non-blocking)
+        process = subprocess.Popen(
+            [sys.executable, overlay_file],
+            cwd=script_dir,
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0
+        )
+        
+        print("[SUCCESS] ✅ Overlay started (background)\n")
+        return process
+        
+    except Exception as e:
+        print(f"[ERROR] Failed to start overlay: {e}")
+        return None
+
+
+def run_real_mode(debug_mode, config_data=None, game_name=None):
     """Run real TikTok mode"""
     print("\n" + "="*70)
     print("REAL TIKTOK MODE")
@@ -111,17 +202,19 @@ def run_real_mode(debug_mode):
     from racing_game_controller import pre_checklist, RacingGameController
     
     try:
-        # Load config
-        config_data = load_config("config.json")
+        # Load config if not provided
         if not config_data:
-            print("[ERROR] config.json not found!")
-            return
+            config_data = load_config("config.json")
+            if not config_data:
+                print("[ERROR] config.json not found!")
+                return
         
-        # Select game
-        game_name = get_game_choice(config_data)
+        # Get game if not provided
         if not game_name:
-            print("[ERROR] No game selected!")
-            return
+            game_name = get_game_choice(config_data)
+            if not game_name:
+                print("[ERROR] No game selected!")
+                return
         
         # Get game-specific config
         game_config = config_data["games"].get(game_name, {})
@@ -156,7 +249,10 @@ def run_real_mode(debug_mode):
                 controller.add_mapping(command, key)
         
         print(f"\n[STARTING] Racing Game Controller for {game_name}...")
-        print(f"Press Ctrl+C to stop\n")
+        print(f"Press Ctrl+C to stop")
+        print("="*70)
+        print("LIVE CONSOLE OUTPUT")
+        print("="*70 + "\n")
         controller.run_blocking()
         
     except KeyboardInterrupt:
@@ -166,7 +262,7 @@ def run_real_mode(debug_mode):
         import traceback
         traceback.print_exc()
 
-def run_mock_mode(debug_mode):
+def run_mock_mode(debug_mode, config_data=None, game_name=None):
     """Run mock testing mode"""
     print("\n" + "="*70)
     print("MOCK MODE - Testing with Simulated Viewers")
@@ -180,6 +276,20 @@ def run_mock_mode(debug_mode):
     from pynput.keyboard import Controller
     
     logger = logging.getLogger(__name__)
+    
+    # Load config if not provided
+    if not config_data:
+        config_data = load_config("config.json")
+        if not config_data:
+            print("[ERROR] config.json not found!")
+            return
+    
+    # Get game if not provided
+    if not game_name:
+        game_name = get_game_choice(config_data)
+        if not game_name:
+            print("[ERROR] No game selected!")
+            return
     
     # Configure logging for mock
     logging.basicConfig(
@@ -202,8 +312,11 @@ def run_mock_mode(debug_mode):
             self.user = MockUser(f"user_{username}", username)
             self.comment = comment
     
-    # Create controller
-    controller = RacingGameController('@mock_user', debug_mode=debug_mode)
+    # Get game-specific config
+    game_config = config_data["games"].get(game_name, {})
+    
+    # Create controller with game name
+    controller = RacingGameController('@mock_user', debug_mode=debug_mode, game_name=game_name)
     
     # Simulate viewers
     mock_viewers = [
@@ -247,38 +360,172 @@ def run_mock_mode(debug_mode):
 
 
 def main():
-    """Main launcher"""
+    """Main launcher entry point"""
     print_banner()
     
-    # Get user choices
-    mode = get_mode_choice()
-    debug = get_debug_choice()
+    # Load config
+    config = load_config()
+    if config is None:
+        config = {}
     
-    # Show summary
-    mode_text = "REAL TikTok" if mode == 'real' else "MOCK Testing"
-    debug_text = "DEBUG (Safe)" if debug else "PRODUCTION (Real)"
+    overlay_process = None
     
-    print("\n" + "="*70)
-    print("CONFIGURATION SUMMARY")
-    print("="*70)
-    print(f"Mode:        {mode_text}")
-    print(f"Debug:       {debug_text}")
-    print("="*70 + "\n")
-    
-    input("Press Enter to continue...")
-    
-    # Run selected mode
     try:
-        if mode == 'real':
-            run_real_mode(debug)
-        else:
-            run_mock_mode(debug)
+        # STEP 1: Always start overlay first (background)
+        print("="*70)
+        print("STARTING OVERLAY")
+        print("="*70)
+        overlay_process = run_overlay_background()
+        
+        time.sleep(1)  # Give overlay 1 second to start
+        
+        # STEP 2: Show menu loop
+        print("="*70)
+        print("MAIN MENU - Overlay is running in background")
+        print("="*70 + "\n")
+        
+        while True:
+            # Get user choice
+            mode = get_mode_choice(config)
+            
+            # Exit option
+            if mode == 'exit':
+                print("\n" + "="*70)
+                print("SHUTTING DOWN")
+                print("="*70)
+                print("[INFO] Closing overlay...")
+                if overlay_process:
+                    try:
+                        # Kill entire process tree (including Electron and Node)
+                        import psutil
+                        parent = psutil.Process(overlay_process.pid)
+                        children = parent.children(recursive=True)
+                        
+                        # Kill all children first
+                        for child in children:
+                            try:
+                                print(f"[INFO] Killing child process {child.pid} ({child.name()})...")
+                                child.kill()
+                            except:
+                                pass
+                        
+                        # Kill parent
+                        print(f"[INFO] Killing parent process {parent.pid}...")
+                        parent.kill()
+                        
+                        # Wait for all to finish
+                        psutil.wait_procs(children + [parent], timeout=3)
+                        print("[SUCCESS] Overlay closed successfully")
+                    except Exception as ex:
+                        print(f"[WARNING] Normal kill failed: {ex}")
+                        try:
+                            # Fallback: taskkill for Windows
+                            if sys.platform == 'win32':
+                                print("[INFO] Using taskkill as fallback...")
+                                subprocess.run(['taskkill', '/F', '/T', '/PID', str(overlay_process.pid)], 
+                                             capture_output=True, timeout=5)
+                        except:
+                            pass
+                print("[INFO] ✅ Goodbye!")
+                return
+            
+            # Get debug choice
+            debug = get_debug_choice(config)
+            game_name = get_game_choice(config)
+            
+            # Show summary
+            mode_text = "REAL TikTok" if mode == 'real' else "MOCK Testing"
+            debug_text = "DEBUG (Safe)" if debug else "PRODUCTION (Real)"
+            
+            print("\n" + "="*70)
+            print("CONFIGURATION SUMMARY")
+            print("="*70)
+            print(f"Mode:        {mode_text}")
+            print(f"Debug:       {debug_text}")
+            print(f"Game:        {game_name}")
+            print("Overlay:     Running ✅")
+            print("="*70 + "\n")
+            
+            input("Press Enter to continue...")
+            
+            # Save config before running
+            save_config(config)
+            
+            # Run selected mode
+            try:
+                if mode == 'real':
+                    run_real_mode(debug, config, game_name)
+                else:
+                    run_mock_mode(debug, config, game_name)
+                
+                # After game ends, show menu again
+                print("\n" + "="*70)
+                print("Game ended. Returning to menu...")
+                print("="*70 + "\n")
+                input("Press Enter to continue...")
+                
+            except KeyboardInterrupt:
+                print("\n\n[INFO] Game interrupted. Returning to menu...\n")
+                input("Press Enter to continue...")
+            except Exception as e:
+                print(f"\n❌ Game error: {e}")
+                import traceback
+                traceback.print_exc()
+                input("\nPress Enter to continue...")
+    
     except KeyboardInterrupt:
-        print("\n\n👋 Launcher closed")
+        print("\n\n" + "="*70)
+        print("LAUNCHER INTERRUPTED")
+        print("="*70)
+        if overlay_process:
+            try:
+                # Kill entire process tree
+                import psutil
+                parent = psutil.Process(overlay_process.pid)
+                children = parent.children(recursive=True)
+                
+                for child in children:
+                    try:
+                        child.kill()
+                    except:
+                        pass
+                
+                parent.kill()
+                psutil.wait_procs(children + [parent], timeout=3)
+            except Exception as ex:
+                try:
+                    if sys.platform == 'win32':
+                        subprocess.run(['taskkill', '/F', '/T', '/PID', str(overlay_process.pid)], 
+                                     capture_output=True, timeout=5)
+                except:
+                    pass
+        print("[INFO] ✅ Goodbye!")
     except Exception as e:
         print(f"\n❌ Fatal error: {e}")
         import traceback
         traceback.print_exc()
+        if overlay_process:
+            try:
+                # Kill entire process tree
+                import psutil
+                parent = psutil.Process(overlay_process.pid)
+                children = parent.children(recursive=True)
+                
+                for child in children:
+                    try:
+                        child.kill()
+                    except:
+                        pass
+                
+                parent.kill()
+                psutil.wait_procs(children + [parent], timeout=3)
+            except Exception as ex:
+                try:
+                    if sys.platform == 'win32':
+                        subprocess.run(['taskkill', '/F', '/T', '/PID', str(overlay_process.pid)], 
+                                     capture_output=True, timeout=5)
+                except:
+                    pass
 
 
 if __name__ == "__main__":
