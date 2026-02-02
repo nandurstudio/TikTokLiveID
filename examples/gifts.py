@@ -1,29 +1,37 @@
-from TikTokLive import TikTokLiveClient
-from TikTokLive.types.events import GiftEvent
+from TikTokLive.client.client import TikTokLiveClient
+from TikTokLive.client.logger import LogLevel
+from TikTokLive.events import ConnectEvent, GiftEvent
 
+<<<<<<< HEAD
 client = TikTokLiveClient("@shelbylynnparker0")
+=======
+client: TikTokLiveClient = TikTokLiveClient(
+    unique_id="@tv_asahi_news"
+)
+>>>>>>> 0659d5e3eb8c250263dbd7afc61e99bbfca344b1
 
 
-@client.on("gift")
+@client.on(ConnectEvent)
+async def on_connect(event: ConnectEvent):
+    client.logger.info(f"Connected to @{event.unique_id}!")
+
+
+@client.on(GiftEvent)
 async def on_gift(event: GiftEvent):
-    """
-    This is an example for the "gift" event to show you how to read gift data properly.
+    client.logger.info("Received a gift!")
 
-    Important Note:
+    # Can have a streak and streak is over
+    if event.gift.streakable and not event.streaking:
+        print(f"{event.user.unique_id} sent {event.repeat_count}x \"{event.gift.name}\"")
 
-    Gifts of type 1 can have streaks, so we need to check that the streak has ended
-    If the gift type isn't 1, it can't repeat. Therefore, we can go straight to printing
-
-    """
-
-    # Streakable gift & streak is over
-    if event.gift.streakable:
-        if not event.gift.streaking:
-            print(f"{event.user.uniqueId} sent {event.gift.repeat_count}x \"{event.gift.extended_gift.name}\"")
-
-    # Not streakable gift
-    else:
-        print(f"{event.user.uniqueId} sent \"{event.gift.extended_gift.name}\"")
+    # Cannot have a streak
+    elif not event.gift.streakable:
+        print(f"{event.user.unique_id} sent \"{event.gift.name}\"")
 
 
-client.run()
+if __name__ == '__main__':
+    # Enable debug info
+    client.logger.setLevel(LogLevel.INFO.value)
+
+    # Connect
+    client.run()

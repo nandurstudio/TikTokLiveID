@@ -1,25 +1,18 @@
-Examples
-======
+# TikTokLive Examples
 
-### Thermal Printing
+The following examples have been curated to cover both the basics and some of the less obvious features of TikTokLive. 
+If you have an example project, please [create a pull request](https://github.com/isaackogan/TikTokLive/pulls) so others can learn!
 
-We have a [Thermal Printing project](https://github.com/isaackogan/TikTokPrinter) for purchase. Check out the [YouTube Showcase & Tutorial](https://www.youtube.com/watch?v=NeapS5Jn_oo).
+## Current Examples
+- [Reading Gifts - gifts.py](gifts.py)
+- [Downloading Images - images.py](images.py)
+- [Logged In Viewing - logged_in.py](logged_in.py)
+- [Proxied Connections - proxying.py](proxying.py)
+- [Recording Livestreams - recording.py](recording.py)
+- [Editing HTTP Defaults - web_defaults.py](web_defaults.py)
+- [Checking If User Is Live - check_live.py](check_live.py)
 
-### Current Examples
-    
-- [Basic Implementation](basic.py)
-- [Thermal Printer](https://github.com/isaackogan/TikTokPrinter)
-- [Discord Webhook](discord.py)
-- [Debug Mode](debug.py)
-- [Reading From GiftEvent](gifts.py)
-- [Using with Pygame](pygamex.py)
-- [Downloading Avatars](avatars.py)
-- [Donation Sounds](DonationSounds)
-- [Chat Bot & Commands](commands.py)
-- [TikTok to Twitch Live Chat](twitch.py)
-- [Download Stream Video](download.py)
-- [Send Messages](message.py)
 
-### Contributing Examples
+## Documentation
 
-Create a [pull request](https://github.com/isaackogan/TikTok-Live-Connector/pulls) & I will add your example when I have free time!
+For full library documentation, consider visiting the docs: https://isaackogan.github.io/TikTokLive/
