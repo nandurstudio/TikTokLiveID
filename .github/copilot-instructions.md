@@ -109,3 +109,151 @@ async def on_debug(event):
 - `room_id` only available after successful connection via `client.room_id`
 - Event handlers **must be async** when using decorator/listener patterns
 - Session IDs expire—handle `InvalidSessionId` exception for long-running connections
+
+## AI Agent Behavior Guidelines
+
+### ⚠️ CRITICAL - DO NOT:
+1. **Never perform destructive operations** on crucial/core files without explicit user approval
+   - Don't delete core library files
+   - Don't modify critical configs without asking
+   - Don't break existing functionality
+
+2. **Never hardcode credentials, API keys, or secrets**
+   - ALWAYS store sensitive data in `.env` file
+   - Use `python-dotenv` to load environment variables
+   - Never commit secrets to git
+   - Never log sensitive information
+
+3. **Never spam markdown/documentation files**
+   - Only create/modify docs when explicitly requested
+   - Don't auto-generate documentation without permission
+   - Consolidate updates into single files when possible
+
+4. **Never commit or push to git automatically**
+   - Always wait for explicit `git add`, `commit`, or `push` request
+   - Ask for confirmation before pushing
+   - Inform user of pending changes that need manual commit
+
+### ✅ BEST PRACTICES:
+- Ask for confirmation before making breaking changes
+- Always suggest alternatives before deletion
+- Keep sensitive data in `.env` (add to `.gitignore`)
+- Report what would change before doing it
+- Wait for explicit user permission for git operations
+### ⚠️ TERMINAL SYNTAX - POWERSHELL ONLY
+
+**ALWAYS use PowerShell syntax. User is on Windows with PowerShell.**
+
+#### ❌ WRONG - Never use Bash/Unix syntax:
+```powershell
+# DON'T DO THIS:
+echo "text" | command          # Unix pipe
+command1 && command2           # Unix AND
+command1; command2             # Unix semicolon chaining (wrong context)
+head -20                        # Unix command
+cat file.txt                    # Unix command
+export VAR=value              # Unix export
+timeout 5 command              # Windows timeout command syntax is different
+```
+
+#### ✅ CORRECT - Use PowerShell syntax:
+```powershell
+# DO THIS INSTEAD:
+Write-Output "text" | command                    # PowerShell pipe (same as Bash)
+command1 ; command2                              # PowerShell semicolon (correct!)
+Select-Object -First 20                          # PowerShell equivalent of head
+Get-Content file.txt                             # PowerShell equivalent of cat
+$env:VAR = "value"                              # PowerShell environment variable
+Start-Sleep -Seconds 5; command                  # PowerShell sleep + command
+
+# More examples:
+ls → Get-ChildItem
+cd → Set-Location or Push-Location/Pop-Location
+mkdir → New-Item -ItemType Directory
+cp → Copy-Item
+mv → Move-Item
+rm → Remove-Item
+grep → Select-String
+```
+
+#### 📋 COMMON MISTAKES TO AVOID:
+
+1. **Piping to `head`** ❌
+   ```powershell
+   # WRONG:
+   python script.py 2>&1 | head -20
+   
+   # CORRECT:
+   python script.py 2>&1 | Select-Object -First 20
+   ```
+
+2. **Using `&&` for chaining** ❌
+   ```powershell
+   # WRONG:
+   python script.py && echo "Done"
+   
+   # CORRECT:
+   python script.py ; echo "Done"
+   # OR
+   python script.py; Write-Output "Done"
+   ```
+
+3. **Using `echo` instead of `Write-Output`** ❌
+   ```powershell
+   # WRONG (echo exists but works differently):
+   echo "test" > file.txt
+   
+   # CORRECT:
+   "test" | Out-File file.txt
+   # OR for simple write:
+   Write-Output "test"
+   ```
+
+4. **Using `timeout` incorrectly** ❌
+   ```powershell
+   # WRONG:
+   timeout 5 python script.py
+   
+   # CORRECT:
+   Start-Process python -ArgumentList "script.py" -Wait
+   # Or use Job-based approach for more control
+   ```
+
+5. **Using `<` for input redirection** ❌
+   ```powershell
+   # WRONG (not supported):
+   python script.py < input.txt
+   
+   # CORRECT:
+   Get-Content input.txt | python script.py
+   ```
+
+#### 🎯 TERMINAL COMMAND BEST PRACTICES:
+
+When running terminal commands:
+1. **Always check if command exists in PowerShell first**
+2. **Use `Get-*` cmdlets for retrieval** (Get-ChildItem, Get-Content, etc.)
+3. **Use pipes `|` correctly** (PowerShell pipes work like Bash)
+4. **Use semicolons `;` for command chaining**
+5. **Use `Write-Output` or `-` for output** (not `echo`)
+6. **Avoid external tools** unless PowerShell equivalent doesn't exist
+
+#### 📌 SAFE POWERSHELL PATTERNS:
+
+```powershell
+# List files
+Get-Item path\to\files | Select-Object Name, Length, LastWriteTime
+
+# Get first/last N lines
+command-output | Select-Object -First 20
+command-output | Select-Object -Last 10
+
+# Filter output
+command-output | Where-Object {$_.Length -gt 1000}
+
+# Format table
+command-output | Format-Table -AutoSize
+
+# Combine operations
+Get-ChildItem | Where-Object {$_.Extension -eq ".py"} | Select-Object Name
+```

@@ -1,6 +1,48 @@
-TikTokLive Python API (Unofficial)
-==================
-TikTokLive is an unofficial Python API wrapper for TikTok LIVE written in Python. With this library you can connect to any TikTok livestream and fetch all data available to users in a stream using just a creator's `@unique_id`.
+# TikTok Live Racing Game Controller
+
+This project builds a real-time TikTok LIVE racing game controller using the unofficial **TikTokLive** Python library.
+
+## Project Structure
+
+```
+TikTokLiveID/
+├── TikTokLive/           ← Original library from isaackogan/TikTokLive (unchanged)
+├── examples/             ← Original examples from library (reference only)
+├── racing_app/           ← Custom racing game application
+│   ├── launcher.py       ← Main entry point
+│   ├── config.json       ← Game configuration
+│   ├── racing_game_controller.py ← Core controller logic
+│   └── cache/            ← Runtime cache (avatars, gifts)
+├── docs/                 ← All documentation
+│   ├── QUICK_START.md
+│   ├── ROADMAP.md
+│   ├── COMMANDS_REFERENCE.md
+│   └── ... (other guides)
+└── [root files]          ← License, requirements, config
+```
+
+## Quick Start
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python racing_app/launcher.py
+```
+
+Then:
+1. Select: Real TikTok or Mock mode
+2. Select: Debug or Production
+3. Select: Game (NFS HEAT, GTA V, MINECRAFT)
+4. Confirm username
+5. LIVE!
+
+---
+
+## About TikTokLive Library
+
+TikTokLive is an unofficial Python API wrapper for TikTok LIVE. With this library you can connect to any TikTok livestream and fetch all data available to users in a stream using just a creator's `@unique_id`.
 
 [![Discord](https://img.shields.io/discord/977648006063091742?logo=discord&label=TikTokLive%20Discord&labelColor=%23171717&color=%231877af)](https://discord.gg/N3KSxzvDX8)
 ![Connections](https://tiktok.eulerstream.com/analytics/pips)

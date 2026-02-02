@@ -1,0 +1,358 @@
+{
+  "active_game": "NFS HEAT",
+  "username": "nandurstudio",
+  "games": {
+    "NFS HEAT": {
+      "debug_mode": true,
+      "cooldown": 0.5,
+      "hold_duration": 1.5,
+      "custom_mappings": {
+        "gas": [
+          "w"
+        ],
+        "maju": [
+          "w"
+        ],
+        "w": [
+          "w"
+        ],
+        "gass": [
+          "w"
+        ],
+        "lurus": [
+          "w"
+        ],
+        "rem": [
+          "s"
+        ],
+        "mundur": [
+          "s"
+        ],
+        "s": [
+          "s"
+        ],
+        "stop": [
+          "s"
+        ],
+        "back": [
+          "s"
+        ],
+        "kiri": [
+          "a"
+        ],
+        "a": [
+          "a"
+        ],
+        "left": [
+          "a"
+        ],
+        "kanan": [
+          "d"
+        ],
+        "d": [
+          "d"
+        ],
+        "right": [
+          "d"
+        ],
+        "serong kiri": [
+          "w",
+          "a"
+        ],
+        "wa": [
+          "w",
+          "a"
+        ],
+        "maju kiri": [
+          "w",
+          "a"
+        ],
+        "serong kanan": [
+          "w",
+          "d"
+        ],
+        "wd": [
+          "w",
+          "d"
+        ],
+        "maju kanan": [
+          "w",
+          "d"
+        ],
+        "mundur kiri": [
+          "s",
+          "a"
+        ],
+        "sa": [
+          "s",
+          "a"
+        ],
+        "mundur kanan": [
+          "s",
+          "d"
+        ],
+        "sd": [
+          "s",
+          "d"
+        ],
+        "drift": [
+          "space"
+        ],
+        "spasi": [
+          "space"
+        ],
+        "handbrake": [
+          "space"
+        ],
+        "tarik": [
+          "space"
+        ],
+        "nitro": [
+          "shift"
+        ],
+        "nos": [
+          "shift"
+        ],
+        "boost": [
+          "shift"
+        ],
+        "shift": [
+          "shift"
+        ],
+        "ngebut": [
+          "shift"
+        ],
+        "klakson": [
+          "h"
+        ],
+        "horn": [
+          "h"
+        ],
+        "tin": [
+          "h"
+        ],
+        "kamera": [
+          "v"
+        ],
+        "cam": [
+          "v"
+        ],
+        "view": [
+          "v"
+        ],
+        "belakang": [
+          "c"
+        ],
+        "liat belakang": [
+          "c"
+        ],
+        "action": [
+          "e"
+        ],
+        "masuk": [
+          "e"
+        ],
+        "event": [
+          "e"
+        ]
+      }
+    },
+    "GTA V": {
+      "debug_mode": true,
+      "cooldown": 0.3,
+      "hold_duration": 1.0,
+      "custom_mappings": {
+        "gas": [
+          "w"
+        ],
+        "maju": [
+          "w"
+        ],
+        "w": [
+          "w"
+        ],
+        "lari": [
+          "w"
+        ],
+        "rem": [
+          "s"
+        ],
+        "mundur": [
+          "s"
+        ],
+        "s": [
+          "s"
+        ],
+        "kiri": [
+          "a"
+        ],
+        "a": [
+          "a"
+        ],
+        "kanan": [
+          "d"
+        ],
+        "d": [
+          "d"
+        ],
+        "wa": [
+          "w",
+          "a"
+        ],
+        "wd": [
+          "w",
+          "d"
+        ],
+        "sa": [
+          "s",
+          "a"
+        ],
+        "sd": [
+          "s",
+          "d"
+        ],
+        "lompat": [
+          "space"
+        ],
+        "jump": [
+          "space"
+        ],
+        "rem tangan": [
+          "space"
+        ],
+        "lari cepat": [
+          "shift",
+          "w"
+        ],
+        "sprint": [
+          "shift",
+          "w"
+        ],
+        "nitro": [
+          "shift"
+        ],
+        "masuk": [
+          "f"
+        ],
+        "naik": [
+          "f"
+        ],
+        "maling": [
+          "f"
+        ],
+        "keluar": [
+          "f"
+        ],
+        "reload": [
+          "r"
+        ],
+        "isi peluru": [
+          "r"
+        ],
+        "klakson": [
+          "e"
+        ],
+        "horn": [
+          "e"
+        ],
+        "hp": [
+          "up"
+        ],
+        "ponsel": [
+          "up"
+        ],
+        "kamera": [
+          "v"
+        ]
+      }
+    },
+    "MINECRAFT": {
+      "debug_mode": true,
+      "cooldown": 0.2,
+      "hold_duration": 0.5,
+      "custom_mappings": {
+        "maju": [
+          "w"
+        ],
+        "w": [
+          "w"
+        ],
+        "mundur": [
+          "s"
+        ],
+        "s": [
+          "s"
+        ],
+        "kiri": [
+          "a"
+        ],
+        "a": [
+          "a"
+        ],
+        "kanan": [
+          "d"
+        ],
+        "d": [
+          "d"
+        ],
+        "wa": [
+          "w",
+          "a"
+        ],
+        "wd": [
+          "w",
+          "d"
+        ],
+        "sa": [
+          "s",
+          "a"
+        ],
+        "sd": [
+          "s",
+          "d"
+        ],
+        "lompat": [
+          "space"
+        ],
+        "jump": [
+          "space"
+        ],
+        "naik": [
+          "space"
+        ],
+        "parkour": [
+          "w",
+          "space"
+        ],
+        "loncat maju": [
+          "w",
+          "space"
+        ],
+        "jongkok": [
+          "shift"
+        ],
+        "sneak": [
+          "shift"
+        ],
+        "turun": [
+          "shift"
+        ],
+        "buang": [
+          "q"
+        ],
+        "drop": [
+          "q"
+        ],
+        "tas": [
+          "e"
+        ],
+        "inventory": [
+          "e"
+        ],
+        "buka": [
+          "e"
+        ]
+      }
+    }
+  }
+}

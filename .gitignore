@@ -11,3 +11,14 @@ badges.py
 proto-testing
 all-proto
 headers.py
+
+# Runtime cache and logs
+racing_app/cache/
+racing_app/*.log
+*.log
+
+# Runtime data
+*.txt
+*.png
+*.jpg
+*.mp3
