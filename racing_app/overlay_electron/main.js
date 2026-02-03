@@ -1,9 +1,20 @@
+/*
+ * TikTok Live Racing Game - Electron Overlay
+ * Real-time event visualization and button controls
+ * 
+ * @nandurstudio
+ * Date Created: 2025-11-20
+ * Last Modified: 2026-02-03
+ */
+
 const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 
 let mainWindow;
 let configData = {};
+let ipcServer = null;
 
 // Load config.json from parent directory
 function loadConfig() {
@@ -25,6 +36,58 @@ function loadConfig() {
   }
 }
 
+// Start HTTP IPC server to receive events from Python controller
+function startIPCServer() {
+  try {
+    ipcServer = http.createServer((req, res) => {
+      if (req.method === 'POST' && req.url === '/ipc') {
+        let body = '';
+        
+        req.on('data', chunk => {
+          body += chunk.toString();
+        });
+        
+        req.on('end', () => {
+          try {
+            const eventData = JSON.parse(body);
+            console.log('📨 IPC Event received:', eventData.event, eventData.data);
+            
+            // Forward event to renderer process
+            if (mainWindow && mainWindow.webContents) {
+              mainWindow.webContents.send(eventData.event, eventData.data);
+            }
+            
+            // Send OK response
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ status: 'ok', event: eventData.event }));
+          } catch (error) {
+            console.error('❌ Error processing IPC event:', error);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: error.message }));
+          }
+        });
+      } else {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Not found' }));
+      }
+    });
+    
+    ipcServer.listen(9999, '127.0.0.1', () => {
+      console.log('✅ IPC HTTP Server listening on http://127.0.0.1:9999/ipc');
+    });
+    
+    ipcServer.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.warn('⚠️  Port 9999 already in use (another instance running?)');
+      } else {
+        console.error('❌ IPC Server error:', error);
+      }
+    });
+  } catch (error) {
+    console.error('❌ Failed to start IPC server:', error);
+  }
+}
+
 function createWindow() {
   // Default settings dari config.json
   const windowConfig = {
@@ -38,6 +101,8 @@ function createWindow() {
     resizable: configData.resizable !== false,        // From config or true
     movable: true,            // Draggable (via IPC manual drag)
     skipTaskbar: false,       // Show in taskbar
+    focusable: true,          // Can receive focus ✅
+    acceptFirstMouse: true,   // Accept mouse clicks when unfocused ✅
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -166,6 +231,11 @@ function createWindow() {
     console.log('   • Resize from edges/corners');
   });
 
+  // IPC Handler untuk testing keyboard input
+  ipcMain.on('test-keyboard', (event, key) => {
+    console.log('📨 Keyboard event from renderer:', key);
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
@@ -198,6 +268,7 @@ function saveWindowPosition(x, y, width, height) {
 // Saat Electron ready
 app.whenReady().then(() => {
   loadConfig();  // Load config before creating window
+  startIPCServer();  // Start IPC HTTP server for Python controller
   createWindow();
 
   app.on('activate', () => {

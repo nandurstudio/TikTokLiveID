@@ -23,35 +23,141 @@ TikTokLiveID/
 
 ## Quick Start
 
-⚠️ **CRITICAL: Anti-Block Warning**
+⚠️ **CRITICAL: Anti-Block Warning - SOLVED ✅**
 
-**DO NOT run this app on the same device/network as TikTok Live Studio!** TikTok will instantly block your account if you stream and run this controller from the same computer/IP.
+**TikTok blocks if connections use SAME IP. Different IPs = Safe.**
 
-**✅ SAFE Setup:**
-- Stream: Computer A + WiFi 1
-- Controller: Computer B + WiFi 2 (or Mobile Hotspot)
+### ✅ CONFIRMED WORKING Solution:
+**Different Connection Types = Different IPs = Safe**
 
-**❌ BLOCKED Setup:**
-- Stream + Controller on same device = **INSTANT BLOCK**
+```mermaid
+flowchart TD
+    Router["🔌 Same Router"]
+    
+    Router --> LAN["📱 Mobile + WiFi<br/>IP: 192.168.1.101<br/>Different IP!"]
+    Router --> ETH["💻 Desktop + LAN/Ethernet<br/>IP: 192.168.1.100<br/>Different IP!"]
+    
+    LAN --> S1["✅ SAFE<br/>TikTok sees<br/>different IPs"]
+    ETH --> S1
+    
+    style Router fill:#4a90e2,color:#fff
+    style LAN fill:#50c878,color:#000
+    style ETH fill:#50c878,color:#000
+    style S1 fill:#28a745,color:#fff
+```
 
-See [racing_app/README.md](racing_app/README.md#-important-anti-block-warning) for detailed anti-block guide.
+**Why it works:**
+- Each connection type (LAN/Ethernet vs WiFi) gets **different IP** from same router
+- TikTok detects based on **IP address**, not device
+- Different IP = Normal viewer behavior
+- No anti-bot flags triggered
+
+### Safe Setup Examples:
+```mermaid
+flowchart LR
+    subgraph Setup1 ["✅ Setup 1: LAN + WiFi (Same Router)"]
+        ST1["Studio: Desktop + LAN<br/>IP: 192.168.1.100"]
+        CT1["Controller: Mobile + WiFi<br/>IP: 192.168.1.101"]
+    end
+    
+    subgraph Setup2 ["✅ Setup 2: Different WiFi Networks"]
+        ST2["Studio: Laptop + WiFi1<br/>IP: 10.0.0.5"]
+        CT2["Controller: Desktop + WiFi2<br/>IP: 10.0.0.6"]
+    end
+    
+    subgraph Setup3 ["✅ Setup 3: Mobile Hotspot"]
+        ST3["Studio: Laptop + WiFi<br/>IP: 192.168.1.100"]
+        CT3["Controller: Desktop + Hotspot<br/>IP: 172.20.10.1"]
+    end
+    
+    ST1 -.->|Different IPs| CT1
+    ST2 -.->|Different IPs| CT2
+    ST3 -.->|Different IPs| CT3
+    
+    style Setup1 fill:#e8f5e9,color:#000
+    style Setup2 fill:#e8f5e9,color:#000
+    style Setup3 fill:#e8f5e9,color:#000
+    style ST1 fill:#c8e6c9,color:#000
+    style CT1 fill:#c8e6c9,color:#000
+    style ST2 fill:#ffcc80,color:#000
+    style CT2 fill:#ffcc80,color:#000
+    style ST3 fill:#ffcc80,color:#000
+    style CT3 fill:#ffcc80,color:#000
+```
+
+### ❌ BLOCKED Setup (DON'T DO):
+```mermaid
+flowchart TD
+    Router2["🔌 Same Router + Same IP"]
+    
+    Router2 --> SAME["💻 Desktop (Studio + Controller)<br/>IP: 192.168.1.100<br/>SAME IP!"]
+    
+    SAME --> B["❌ BLOCKED<br/>TikTok flags as bot<br/>Account banned"]
+    
+    style Router2 fill:#e74c3c,color:#fff
+    style SAME fill:#c0392b,color:#fff
+    style B fill:#a93226,color:#fff
+```
+
+See [racing_app/README.md](racing_app/README.md#-important-anti-block-warning) for detailed guide.
 
 ---
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+## Installation & Setup
 
-# Run the application
-python racing_app/launcher.py
+### 1. Install Dependencies
+
+```bash
+pip install -r requirements.txt
 ```
 
-Then:
-1. Select: Real TikTok or Mock mode
-2. Select: Debug or Production
-3. Select: Game (NFS HEAT, GTA V, MINECRAFT)
-4. Confirm username
-5. LIVE!
+### 2. Run the Application
+
+From the **root directory** (TikTokLiveID):
+
+```bash
+python launcher.py
+```
+
+The launcher will:
+1. ✅ Auto-load last session if available (or ask to select)
+2. 📋 Show mode options: Real TikTok / Mock / Overlay
+3. 🎮 Select game and debug mode
+4. 🚀 Start with your selection
+
+**Example Flow:**
+```
+QUICK LOAD LAST SESSION
+Mode:        REAL TikTok
+Debug:       PRODUCTION (Real)
+Game:        NFS HEAT
+
+Load last session? (1=Yes, 2=No): 1  ← Press 1 to auto-load
+```
+
+### 3. Configuration
+
+All settings are stored in `racing_app/config.json`:
+- Game definitions with custom key mappings
+- Last session settings (auto-saved)
+- Overlay appearance options
+- Per-game cooldowns and hold durations
+
+See [CONFIG_GUIDE.md](racing_app/CONFIG_GUIDE.md) for full documentation.
+
+### 4. Overlay Mode
+
+Run overlay instruction window (always-on-top, borderless):
+
+```bash
+python launcher.py
+# Choose: 3. OVERLAY ONLY
+```
+
+**Shortcuts:**
+- `Ctrl+W` = Close
+- `Ctrl+M` = Minimize
+- `Ctrl+T` = Toggle always-on-top
 
 ---
 
@@ -121,18 +227,31 @@ The following are my two favourite enterprise use-cases for the TikTokLive famil
 
 ## Table of Contents
 
-- [Getting Started](#getting-started)
-    - [Parameters](#parameters)
-    - [Methods](#methods)
-    - [Properties](#properties)
-    - [WebDefaults](#webdefaults)
-- [Documentation](https://isaackogan.github.io/TikTokLive/)
-- [Other Languages](#other-languages)
-- [Community](#community)
-- [Examples](https://github.com/isaackogan/TikTokLive/tree/master/examples)
-- [Licensing](#license)
-- [Star History](#star-history)
-- [Contributors](#contributors)
+- [TikTok Live Racing Game Controller](#tiktok-live-racing-game-controller)
+  - [Project Structure](#project-structure)
+  - [Quick Start](#quick-start)
+    - [✅ CONFIRMED WORKING Solution:](#-confirmed-working-solution)
+    - [Safe Setup Examples:](#safe-setup-examples)
+    - [❌ BLOCKED Setup (DON'T DO):](#-blocked-setup-dont-do)
+  - [About TikTokLive Library](#about-tiktoklive-library)
+  - [Captcha Service](#captcha-service)
+  - [Table of Contents](#table-of-contents)
+  - [Community](#community)
+  - [Getting Started](#getting-started)
+  - [Other Languages](#other-languages)
+  - [Parameters](#parameters)
+  - [Methods](#methods)
+  - [Properties](#properties)
+  - [WebDefaults](#webdefaults)
+  - [Events](#events)
+    - [Custom Events](#custom-events)
+    - [Proto Events](#proto-events)
+    - [Special Events](#special-events)
+    - [`GiftEvent`](#giftevent)
+  - [Checking If A User Is Live](#checking-if-a-user-is-live)
+  - [Star History](#star-history)
+  - [License](#license)
+  - [Contributors](#contributors)
 
 ## Community
 

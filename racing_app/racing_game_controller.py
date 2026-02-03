@@ -8,6 +8,10 @@ Supports racing games like:
 - Roblox Racing
 - Need for Speed
 - Any game with WASD controls
+
+@nandurstudio
+Date Created: 2025-12-15
+Last Modified: 2026-02-03
 """
 
 import asyncio
@@ -21,10 +25,12 @@ import traceback
 import httpx
 from pynput.keyboard import Controller, Key
 from TikTokLive import TikTokLiveClient
-from TikTokLive.events import ConnectEvent, CommentEvent, DisconnectEvent
+from TikTokLive.events import ConnectEvent, CommentEvent, DisconnectEvent, GiftEvent, LikeEvent
 from typing import Dict, Set
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from notification_logger import NotificationLogger, OverlayNotificationManager
+from ipc_server import start_ipc_server
 
 # Force UTF-8 output on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -32,7 +38,7 @@ if sys.stdout.encoding != 'utf-8':
 
 # Configure logging with UTF-8 support
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.INFO,  # Back to INFO level
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('racing_controller.log', encoding='utf-8'),
@@ -40,6 +46,18 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Disable noisy HTTP logs from httpx and urllib3
+logging.getLogger('httpx').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
+logging.getLogger('httpcore').setLevel(logging.WARNING)
+
+# Suppress asyncio pending task warnings (normal during shutdown)
+logging.getLogger('asyncio').setLevel(logging.CRITICAL)
+
+# Notification system
+overlay_notif_manager = OverlayNotificationManager()
+notify = NotificationLogger(overlay_callback=overlay_notif_manager.send)
 
 
 @dataclass
@@ -64,7 +82,7 @@ class RacingGameController:
     Maps TikTok chat commands to WASD keyboard input
     """
     
-    def __init__(self, unique_id: str, debug_mode: bool = True, game_name: str = "Game"):
+    def __init__(self, unique_id: str, debug_mode: bool = True, game_name: str = "Game", custom_mappings: dict = None):
         """
         Initialize racing game controller
         
@@ -72,10 +90,12 @@ class RacingGameController:
             unique_id: TikTok username (without @)
             debug_mode: True = no keyboard input, False = real keyboard
             game_name: Name of the game being played (for logging)
+            custom_mappings: Custom command mappings from config.json
         """
         self.unique_id = unique_id
         self.debug_mode = debug_mode
         self.game_name = game_name
+        self.custom_mappings = custom_mappings or {}  # Store for animation detection
         
         # Anti-block: Use longer timeout to avoid connection issues
         # Don't override default headers - TikTokLive library handles this smartly
@@ -155,6 +175,14 @@ class RacingGameController:
             "sd": ["s", "d"],     # Backward + Right (backward right)
         }
         
+        # Animation state tracking
+        self.active_animations = {
+            'gas': None,        # Current gas animation task
+            'brake': None,      # Current brake animation task
+            'steer_left': None, # Current steer left animation task
+            'steer_right': None # Current steer right animation task
+        }
+        
         # User cooldowns (prevent spam)
         self.user_cooldowns: Dict[str, UserCooldown] = {}
         self.global_cooldown_duration = 0.05  # Global cooldown in seconds
@@ -179,6 +207,9 @@ class RacingGameController:
         
         # Register event handlers
         self._register_handlers()
+        
+        # Start IPC server for Electron overlay communication
+        self._start_ipc_server()
     
     def _register_handlers(self):
         """Register all event handlers"""
@@ -196,12 +227,143 @@ class RacingGameController:
         async def on_disconnect(event: DisconnectEvent):
             logger.warning("[DISCONNECTED] from stream")
             self._print_stats()
+        
+        @self.client.on(GiftEvent)
+        async def on_gift(event: GiftEvent):
+            await self._handle_gift_event(event)
+        
+        @self.client.on(LikeEvent)
+        async def on_like(event: LikeEvent):
+            await self._handle_like_event(event)
+    
+    def _start_ipc_server(self):
+        """Start IPC server for Electron overlay communication"""
+        try:
+            ipc_server = start_ipc_server()
+            logger.info("✅ IPC Server started on http://127.0.0.1:9999/ipc")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to start IPC server: {e}")
+            logger.info("Continuing without overlay communication...")
     
     async def _handle_comment(self, event: CommentEvent):
         """Handle incoming comment"""
         command = event.comment.lower().strip()
         user_id = event.user.unique_id
         username = event.user.nickname
+        
+        # Check if command exists in custom_mappings
+        mapped_keys = self.custom_mappings.get(command, [])
+        
+        # Track if animation was triggered (to avoid double log)
+        animation_triggered = False
+        
+        # Initialize key counts
+        w_count = 0
+        s_count = 0
+        a_count = 0
+        d_count = 0
+        space_count = 0
+        c_count = 0
+        
+        # Analyze mapped keys to determine animation type
+        if mapped_keys and len(mapped_keys) > 0:
+            # Count different key types
+            w_count = mapped_keys.count('w')
+            s_count = mapped_keys.count('s')
+            a_count = mapped_keys.count('a')
+            d_count = mapped_keys.count('d')
+            space_count = mapped_keys.count('space')
+            c_count = mapped_keys.count('c')
+            
+            # GAS PEDAL: Contains 'w' key(s)
+            if w_count > 0:
+                intensity = min(w_count, 4)  # Max 4
+                try:
+                    overlay_notif_manager.send_event('gas-event', {
+                        'username': username,
+                        'intensity': intensity,
+                        'command': command
+                    })
+                    animation_triggered = True
+                except Exception as ipc_err:
+                    logger.debug(f"IPC gas event error: {ipc_err}")
+            
+            # BRAKE PEDAL: Contains 's' key(s)
+            if s_count > 0:
+                intensity = min(s_count, 4)  # Max 4
+                try:
+                    overlay_notif_manager.send_event('brake-event', {
+                        'username': username,
+                        'intensity': intensity,
+                        'command': command
+                    })
+                    animation_triggered = True
+                except Exception as ipc_err:
+                    logger.debug(f"IPC brake event error: {ipc_err}")
+            
+            # STEERING LEFT: Contains 'a' key
+            if a_count > 0:
+                try:
+                    overlay_notif_manager.send_event('steer-left-event', {
+                        'username': username,
+                        'command': command
+                    })
+                    animation_triggered = True
+                except Exception as ipc_err:
+                    logger.debug(f"IPC steer-left event error: {ipc_err}")
+            
+            # STEERING RIGHT: Contains 'd' key
+            if d_count > 0:
+                try:
+                    overlay_notif_manager.send_event('steer-right-event', {
+                        'username': username,
+                        'command': command
+                    })
+                    animation_triggered = True
+                except Exception as ipc_err:
+                    logger.debug(f"IPC steer-right event error: {ipc_err}")
+            
+            # DRIFT BUTTON: Contains 'space' key
+            if space_count > 0:
+                try:
+                    overlay_notif_manager.send_event('drift-event', {
+                        'username': username,
+                        'command': command
+                    })
+                    animation_triggered = True
+                except Exception as ipc_err:
+                    logger.debug(f"IPC drift event error: {ipc_err}")
+            
+            # CAMERA BUTTON: Contains 'c' key
+            if c_count > 0:
+                try:
+                    overlay_notif_manager.send_event('camera-event', {
+                        'username': username,
+                        'command': command
+                    })
+                    animation_triggered = True
+                except Exception as ipc_err:
+                    logger.debug(f"IPC camera event error: {ipc_err}")
+        
+        # Log command if animation was triggered (for multi-key commands)
+        if animation_triggered:
+            # Reconstruct the display text based on what was triggered
+            display_keys = []
+            if w_count > 0:
+                display_keys.append(f"{w_count}x W")
+            if s_count > 0:
+                display_keys.append(f"{s_count}x S")
+            if a_count > 0:
+                display_keys.append(f"{a_count}x A")
+            if d_count > 0:
+                display_keys.append(f"{d_count}x D")
+            if space_count > 0:
+                display_keys.append("SPACE")
+            if c_count > 0:
+                display_keys.append("C")
+            
+            keys_text = " + ".join(display_keys)
+            logger.info(f"[{username}] {command} \u2192 {keys_text}")
         
         # Get or create user cooldown
         if user_id not in self.user_cooldowns:
@@ -218,15 +380,18 @@ class RacingGameController:
             if user_cooldown.is_on_cooldown():
                 return  # Ignore if too fast
             
-            # Hold multiple keys
+            keys_text = " + ".join([k.upper() for k in combination])
+            logger.info(f"[{username}] {command} → {keys_text}")
+            
+            # Hold multiple keys simultaneously
             await self._hold_multiple_keys(combination, self.movement_hold_duration)
             user_cooldown.reset()
             
             # Update statistics
             self._update_stats(command, user_id, username)
             
-            keys_text = " + ".join([k.upper() for k in combination])
-            logger.info(f"{username:20} -> '{command:15}' => {keys_text} (held {self.movement_hold_duration}s)")
+            # Single notification call
+            notify.command_received(username, command, keys_text)
             return
         
         # Check if command is mapped
@@ -240,14 +405,52 @@ class RacingGameController:
         
         # Handle key as list (from config.json) or string (from default mapping)
         if isinstance(key, list):
-            # If it's a list with multiple keys, treat as combination
+            # If it's a list with multiple keys, treat as combination or special command
             if len(key) > 1:
-                await self._hold_multiple_keys(key, self.movement_hold_duration)
-                user_cooldown.reset()
-                self._update_stats(command, user_id, username)
-                keys_text = " + ".join([k.upper() for k in key])
-                logger.info(f"{username:20} -> '{command:15}' => {keys_text} (held {self.movement_hold_duration}s)")
-                return
+                # Check if it's a special command type
+                if key[0].startswith('_'):
+                    # Special command - just log and ignore (handled elsewhere)
+                    user_cooldown.reset()
+                    self._update_stats(command, user_id, username)
+                    notify.command_received(username, command, f"[{key[0]}]")
+                    return
+                
+                # Check if it's a multi-press (all same key) or combination (different keys)
+                if all(k == key[0] for k in key):
+                    # Multi-press: Hold same key N times for duration each
+                    keys_text = f"{len(key)}x {key[0].upper()}"
+                    key_count = len(key)
+                    
+                    # Only log and execute if animation was NOT already triggered
+                    if not animation_triggered:
+                        logger.info(f"[{username}] {command} → {keys_text}")
+                        
+                        # For movement keys (w/a/s/d), hold multiple times
+                        # For other keys, just press once
+                        if key[0] in self.movement_keys:
+                            await self._hold_key_multiple_times(key[0], key_count, self.movement_hold_duration)
+                        else:
+                            await self._press_key(key[0])
+                        
+                        notify.command_received(username, command, keys_text)
+                    
+                    user_cooldown.reset()
+                    self._update_stats(command, user_id, username)
+                    return
+                else:
+                    # Combination: Different keys (may need sequential or simultaneous execution)
+                    keys_text = " + ".join([k.upper() for k in key])
+                    
+                    # Only log and execute if animation was NOT already triggered
+                    if not animation_triggered:
+                        logger.info(f"[{username}] {command} → {keys_text}")
+                        # Use smart execution: sequential for conflicts, simultaneous for non-conflicts
+                        await self._execute_sequential_keys(key, self.movement_hold_duration)
+                        notify.command_received(username, command, keys_text)
+                    
+                    user_cooldown.reset()
+                    self._update_stats(command, user_id, username)
+                    return
             # If it's a single-item list, extract the string
             elif len(key) == 1:
                 key = key[0]
@@ -255,9 +458,48 @@ class RacingGameController:
                 return  # Empty list, ignore
         
         # Now key is guaranteed to be a string
-        # Check if this is a movement key that should be held
-        if key in self.movement_keys:
-            # Hold movement keys for 5 seconds
+        # Special keys starting with _ are handled dynamically via custom_mappings
+        # No hardcoded behavior needed - just skip to normal key processing
+        
+        # Skip if animation already triggered (to avoid double/triple log)
+        if animation_triggered:
+            user_cooldown.reset()
+            self._update_stats(command, user_id, username)
+            # Don't call notify here - already logged in animation block above
+            return
+        
+        # Always log single key commands (only if animation NOT triggered)
+        logger.info(f"[{username}] {command} → {key.upper()}")
+        
+        # Check for specific single keys that need animation
+        # Only send if animation was NOT already triggered by detection phase
+        if not animation_triggered:
+            if key == 'c':
+                # Camera button animation
+                try:
+                    overlay_notif_manager.send_event('camera-event', {
+                        'username': username,
+                        'command': command
+                    })
+                except Exception as ipc_err:
+                    logger.error(f"IPC camera event error: {ipc_err}")
+            elif key == 'space':
+                # Drift button animation
+                try:
+                    overlay_notif_manager.send_event('drift-event', {
+                        'username': username,
+                        'command': command
+                    })
+                except Exception as ipc_err:
+                    logger.debug(f"IPC drift event error: {ipc_err}")
+        
+        # Determine if this key should be held or pressed
+        # Special keys that need animation: c (camera), space (drift)
+        if key in ['c', 'space']:
+            # Hold for full duration (like movement keys)
+            await self._hold_key(key, self.movement_hold_duration)
+        elif key in self.movement_keys:
+            # Hold movement keys for configured duration
             await self._hold_key(key, self.movement_hold_duration)
         else:
             # Press other keys briefly
@@ -268,8 +510,95 @@ class RacingGameController:
         # Update statistics
         self._update_stats(command, user_id, username)
         
-        hold_text = f"(held {self.movement_hold_duration}s)" if key in self.movement_keys else ""
-        logger.info(f"{username:20} -> '{command:15}' => {key} {hold_text}")
+        # Single notification call
+        notify.command_received(username, command, key.upper())
+    
+    async def _handle_gift_event(self, event: GiftEvent):
+        """Handle incoming gift event (e.g., rose/bunga mawar for NOS)"""
+        try:
+            # Check if this is a rose/bunga mawar gift (usually gift_id 1 or similar)
+            # Rose gift typically has name containing "rose" or "mawar"
+            # event.gift is already ExtendedGift object with .name attribute
+            gift_name = event.gift.name.lower() if hasattr(event.gift, 'name') else ""
+            
+            # Detect rose/mawar gift
+            if "rose" in gift_name or "mawar" in gift_name:
+                user_id = event.user.unique_id
+                username = event.user.nickname
+                
+                # Get or create user cooldown
+                if user_id not in self.user_cooldowns:
+                    self.user_cooldowns[user_id] = UserCooldown(
+                        cooldown_duration=self.per_user_cooldown_duration
+                    )
+                
+                user_cooldown = self.user_cooldowns[user_id]
+                
+                # Check per-user cooldown
+                if user_cooldown.is_on_cooldown():
+                    return  # Ignore if too fast
+                
+                # Send IPC message to overlay to trigger NOS animation
+                try:
+                    overlay_notif_manager.send_event('gift-event', {
+                        'gift_name': gift_name,
+                        'username': username
+                    })
+                    logger.info(f"🌹 IPC gift-event sent for {username}")
+                except Exception as ipc_err:
+                    logger.warning(f"⚠️ IPC gift event error: {ipc_err}")
+                
+                # Trigger NOS/Nitro - read from config mapping
+                # Get mapped keys for _gift_rose from config
+                mapped_keys = self.custom_mappings.get('_gift_rose', [])
+                for key in mapped_keys:
+                    await self._press_key(key, 0.5)
+                
+                user_cooldown.reset()
+                self._update_stats('gift_rose', user_id, username)
+                notify.command_received(username, "gift_rose", "ROSE GIFT 🌹")
+        
+        except Exception as e:
+            logger.error(f"Error handling gift event: {e}")
+    
+    async def _handle_like_event(self, event: LikeEvent):
+        """Handle incoming like event (love/heart taps for TAP)"""
+        try:
+            user_id = event.user.unique_id
+            username = event.user.nickname
+            
+            # Get or create user cooldown
+            if user_id not in self.user_cooldowns:
+                self.user_cooldowns[user_id] = UserCooldown(
+                    cooldown_duration=self.per_user_cooldown_duration
+                )
+            
+            user_cooldown = self.user_cooldowns[user_id]
+            
+            # Check per-user cooldown
+            if user_cooldown.is_on_cooldown():
+                return  # Ignore if too fast
+            
+            # Send IPC message to overlay to trigger KLAKSON animation
+            try:
+                overlay_notif_manager.send_event('like-event', {
+                    'username': username
+                })
+            except Exception as ipc_err:
+                logger.debug(f"IPC like event error: {ipc_err}")
+            
+            # Trigger horn/klakson - read from config mapping
+            # Get mapped keys for _like_love from config
+            mapped_keys = self.custom_mappings.get('_like_love', [])
+            for key in mapped_keys:
+                await self._press_key(key, 0.2)
+            
+            user_cooldown.reset()
+            self._update_stats('like_love', user_id, username)
+            notify.command_received(username, "like_love", "LIKE/LOVE ❤️")
+        
+        except Exception as e:
+            logger.error(f"Error handling like event: {e}")
     
     async def _press_key(self, key: str, duration: float = None):
         """Press a key for duration seconds"""
@@ -280,6 +609,16 @@ class RacingGameController:
                 logger.debug(f"[DEBUG] Would press: {key} ({duration}s)")
                 return
             
+            # Map special key names to pynput Key objects
+            if key == 'space':
+                key = Key.space
+            elif key == 'enter':
+                key = Key.enter
+            elif key == 'shift':
+                key = Key.shift
+            elif key == 'ctrl' or key == 'lctrl':
+                key = Key.ctrl_l
+            
             self.keyboard.press(key)
             await asyncio.sleep(duration)
             self.keyboard.release(key)
@@ -287,12 +626,152 @@ class RacingGameController:
         except Exception as e:
             logger.error(f"Error pressing key '{key}': {e}")
     
+    def _are_keys_conflicting(self, keys: list) -> bool:
+        """Check if keys conflict (can't be held simultaneously)
+        
+        Conflicting pairs:
+        - W + S (forward + backward)
+        - A + D (left + right)
+        
+        Non-conflicting (can simultaneous):
+        - W + A (forward + left)
+        - W + D (forward + right)
+        - S + A (backward + left)
+        - S + D (backward + right)
+        """
+        has_forward = 'w' in keys
+        has_backward = 's' in keys
+        has_left = 'a' in keys
+        has_right = 'd' in keys
+        
+        # Check for conflicting pairs
+        if has_forward and has_backward:
+            return True  # W + S conflict
+        if has_left and has_right:
+            return True  # A + D conflict
+        
+        return False  # Non-conflicting
+    
+    async def _execute_sequential_keys(self, keys: list, duration: float):
+        """Execute keys sequentially if they conflict, simultaneously if not
+        
+        Example:
+        - ["w", "a"] → simultaneous (non-conflict)
+        - ["w", "s"] → sequential (conflict: W first, then S)
+        """
+        if self._are_keys_conflicting(keys):
+            # Conflicting keys: execute sequentially
+            logger.debug(f"Executing conflicting keys sequentially: {keys}")
+            for key in keys:
+                # Stop any running animation for this key
+                if key == 'w':
+                    animation_type = 'gas'
+                elif key == 's':
+                    animation_type = 'brake'
+                elif key == 'a':
+                    animation_type = 'steer_left'
+                elif key == 'd':
+                    animation_type = 'steer_right'
+                else:
+                    continue
+                
+                # Cancel previous animation if exists
+                if self.active_animations[animation_type]:
+                    self.active_animations[animation_type].cancel()
+                
+                # Execute current key
+                await self._hold_key(key, duration)
+                
+                # Small delay between sequential presses
+                await asyncio.sleep(0.05)
+        else:
+            # Non-conflicting keys: execute simultaneously
+            logger.debug(f"Executing non-conflicting keys simultaneously: {keys}")
+            
+            # Map special key names
+            mapped_keys = []
+            for key in keys:
+                if key == 'space':
+                    mapped_keys.append(Key.space)
+                elif key == 'enter':
+                    mapped_keys.append(Key.enter)
+                elif key == 'shift':
+                    mapped_keys.append(Key.shift)
+                elif key == 'ctrl' or key == 'lctrl':
+                    mapped_keys.append(Key.ctrl_l)
+                else:
+                    mapped_keys.append(key)
+            
+            # Press all simultaneously
+            for key in mapped_keys:
+                self.keyboard.press(key)
+                self.currently_pressed.add(key)
+            
+            # Hold for duration
+            await asyncio.sleep(duration)
+            
+            # Release all
+            for key in mapped_keys:
+                self.keyboard.release(key)
+                self.currently_pressed.discard(key)
+    
+    async def _hold_key_multiple_times(self, key: str, count: int, duration: float):
+        """Hold a key multiple times, each for duration seconds
+        
+        Args:
+            key: Key to hold
+            count: Number of times to hold (e.g., "aaa" = 3 times)
+            duration: Duration to hold each time (default 3 seconds)
+        
+        Example: "aaa" → Hold A for 3s, release, hold A for 3s, release, hold A for 3s (total ~9s)
+        """
+        try:
+            if self.debug_mode:
+                logger.debug(f"[DEBUG] Would hold {count}x: {key} ({duration}s each)")
+                return
+            
+            # Map special key names to pynput Key objects
+            mapped_key = key
+            if key == 'space':
+                mapped_key = Key.space
+            elif key == 'enter':
+                mapped_key = Key.enter
+            elif key == 'shift':
+                mapped_key = Key.shift
+            elif key == 'ctrl' or key == 'lctrl':
+                mapped_key = Key.ctrl_l
+            
+            # Hold key N times
+            for i in range(count):
+                self.keyboard.press(mapped_key)
+                self.currently_pressed.add(key)
+                await asyncio.sleep(duration)
+                self.keyboard.release(mapped_key)
+                self.currently_pressed.discard(key)
+                
+                # Small delay between presses (except last one)
+                if i < count - 1:
+                    await asyncio.sleep(0.05)  # 50ms delay between presses
+        
+        except Exception as e:
+            logger.error(f"Error holding key multiple times '{key}' ({count}x): {e}")
+    
     async def _hold_key(self, key: str, duration: float):
         """Hold a key for duration seconds"""
         try:
             if self.debug_mode:
                 logger.debug(f"[DEBUG] Would hold: {key} ({duration}s)")
                 return
+            
+            # Map special key names to pynput Key objects
+            if key == 'space':
+                key = Key.space
+            elif key == 'enter':
+                key = Key.enter
+            elif key == 'shift':
+                key = Key.shift
+            elif key == 'ctrl' or key == 'lctrl':
+                key = Key.ctrl_l
             
             self.keyboard.press(key)
             self.currently_pressed.add(key)
@@ -310,8 +789,22 @@ class RacingGameController:
                 logger.debug(f"[DEBUG] Would hold: {'+'.join(keys)} ({duration}s)")
                 return
             
-            # Press all keys
+            # Map special key names to pynput Key objects
+            mapped_keys = []
             for key in keys:
+                if key == 'space':
+                    mapped_keys.append(Key.space)
+                elif key == 'enter':
+                    mapped_keys.append(Key.enter)
+                elif key == 'shift':
+                    mapped_keys.append(Key.shift)
+                elif key == 'ctrl' or key == 'lctrl':
+                    mapped_keys.append(Key.ctrl_l)
+                else:
+                    mapped_keys.append(key)
+            
+            # Press all keys simultaneously
+            for key in mapped_keys:
                 self.keyboard.press(key)
                 self.currently_pressed.add(key)
             
@@ -319,12 +812,37 @@ class RacingGameController:
             await asyncio.sleep(duration)
             
             # Release all keys
-            for key in keys:
+            for key in mapped_keys:
                 self.keyboard.release(key)
                 self.currently_pressed.discard(key)
             
         except Exception as e:
             logger.error(f"Error holding multiple keys {keys}: {e}")
+    
+    async def _press_keys_sequentially(self, keys: list, delay: float = 0.05):
+        """Press multiple keys sequentially (one after another)
+        
+        Args:
+            keys: List of keys to press
+            delay: Delay between key presses in seconds (default 50ms)
+        """
+        try:
+            if self.debug_mode:
+                logger.debug(f"[DEBUG] Would press sequentially: {len(keys)}x {keys[0]}")
+                return
+            
+            # Press each key one after another with delay
+            for key in keys:
+                self.keyboard.press(key)
+                await asyncio.sleep(self.press_duration)  # Hold key briefly
+                self.keyboard.release(key)
+                
+                # Delay between sequential presses
+                if key != keys[-1]:  # Don't delay after last press
+                    await asyncio.sleep(delay)
+            
+        except Exception as e:
+            logger.error(f"Error pressing keys sequentially {keys}: {e}")
     
     def _update_stats(self, command: str, user_id: str, username: str):
         """Update statistics"""
@@ -335,6 +853,60 @@ class RacingGameController:
         if command not in self.stats["commands_by_type"]:
             self.stats["commands_by_type"][command] = 0
         self.stats["commands_by_type"][command] += 1
+        
+        if command not in self.stats["commands_by_type"]:
+            self.stats["commands_by_type"][command] = 0
+        self.stats["commands_by_type"][command] += 1
+    
+    async def _cleanup_async(self):
+        """Async cleanup for proper websocket disconnection"""
+        try:
+            # Cancel pending animations
+            for anim_type, task in self.active_animations.items():
+                if task:
+                    try:
+                        task.cancel()
+                    except:
+                        pass
+            
+            # Close client connection properly (async)
+            if self.client and self.client.connected:
+                try:
+                    await self.client.disconnect()
+                    # Give websocket time to close cleanly
+                    await asyncio.sleep(0.3)
+                except:
+                    pass
+            
+            # Cancel all remaining tasks
+            try:
+                tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+                for task in tasks:
+                    task.cancel()
+                if tasks:
+                    await asyncio.gather(*tasks, return_exceptions=True)
+            except:
+                pass
+            
+            logger.info("[CLEANUP] Resources released successfully")
+        except Exception as e:
+            logger.debug(f"Cleanup error (non-critical): {e}")
+    
+    def _cleanup(self):
+        """Synchronous cleanup wrapper"""
+        try:
+            # Try to run async cleanup if event loop is available
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is running, schedule async cleanup
+                asyncio.ensure_future(self._cleanup_async())
+            else:
+                # If loop is not running, run async cleanup in new loop
+                asyncio.run(self._cleanup_async())
+        except RuntimeError:
+            # No event loop available, do basic cleanup only
+            logger.debug("[CLEANUP] No event loop, skipping async cleanup")
+            pass
     
     def _print_stats(self):
         """Print session statistics"""
@@ -428,8 +1000,13 @@ class RacingGameController:
                 break  # Success, exit retry loop
                 
             except KeyboardInterrupt:
-                logger.info("Shutting down...")
+                logger.info("✅ Goodbye!")
                 self._print_stats()
+                # Proper async cleanup to prevent websocket errors
+                try:
+                    asyncio.run(self._cleanup_async())
+                except:
+                    pass  # Ignore any cleanup errors on exit
                 break
             
             except Exception as e:

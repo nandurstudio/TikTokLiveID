@@ -1,3 +1,4 @@
+ignore
 .idea
 dist
 venv
@@ -46,3 +47,13 @@ racing_app/overlay_electron/package-lock.json
 *.swp
 *.swo
 *~
+
+# Development and testing files
+PHASE10_*.md
+VERIFICATION_TESTS.md
+launcher.py
+racing_app/CONFIG_GUIDE.md
+racing_app/events_queue.json
+racing_app/ipc_server.py
+racing_app/live-instruction.html
+racing_app/overlay_electron/README.md

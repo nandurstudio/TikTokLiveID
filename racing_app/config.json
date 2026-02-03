@@ -1,13 +1,32 @@
 {
+  "version": "2.1.0",
   "active_game": "NFS HEAT",
   "username": "nandurstudio",
+  "last_session": {
+    "mode": "real",
+    "debug_mode": false,
+    "game": "NFS HEAT"
+  },
+  "overlay": {
+    "enabled": true,
+    "width": 691,
+    "height": 301,
+    "x": 278,
+    "y": 206,
+    "always_on_top": true,
+    "frameless": true,
+    "resizable": true
+  },
   "games": {
     "NFS HEAT": {
       "debug_mode": true,
       "cooldown": 0.5,
-      "hold_duration": 1.5,
+      "hold_duration": 3,
       "custom_mappings": {
         "gas": [
+          "w"
+        ],
+        "gass": [
           "w"
         ],
         "maju": [
@@ -16,13 +35,35 @@
         "w": [
           "w"
         ],
-        "gass": [
-          "w"
-        ],
         "lurus": [
           "w"
         ],
+        "ww": [
+          "w",
+          "w"
+        ],
+        "www": [
+          "w",
+          "w",
+          "w"
+        ],
+        "wwww": [
+          "w",
+          "w",
+          "w",
+          "w"
+        ],
+        "wwwww": [
+          "w",
+          "w",
+          "w",
+          "w",
+          "w"
+        ],
         "rem": [
+          "s"
+        ],
+        "stop": [
           "s"
         ],
         "mundur": [
@@ -31,16 +72,50 @@
         "s": [
           "s"
         ],
-        "stop": [
+        "back": [
           "s"
         ],
-        "back": [
+        "ss": [
+          "s",
+          "s"
+        ],
+        "sss": [
+          "s",
+          "s",
+          "s"
+        ],
+        "ssss": [
+          "s",
+          "s",
+          "s",
+          "s"
+        ],
+        "sssss": [
+          "s",
+          "s",
+          "s",
+          "s",
           "s"
         ],
         "kiri": [
           "a"
         ],
         "a": [
+          "a"
+        ],
+        "aa": [
+          "a",
+          "a"
+        ],
+        "aaa": [
+          "a",
+          "a",
+          "a"
+        ],
+        "aaaa": [
+          "a",
+          "a",
+          "a",
           "a"
         ],
         "left": [
@@ -50,6 +125,21 @@
           "d"
         ],
         "d": [
+          "d"
+        ],
+        "dd": [
+          "d",
+          "d"
+        ],
+        "ddd": [
+          "d",
+          "d",
+          "d"
+        ],
+        "dddd": [
+          "d",
+          "d",
+          "d",
           "d"
         ],
         "right": [
@@ -107,44 +197,26 @@
         "tarik": [
           "space"
         ],
-        "nitro": [
+        "_gift_rose": [
           "shift"
         ],
-        "nos": [
-          "shift"
-        ],
-        "boost": [
-          "shift"
-        ],
-        "shift": [
-          "shift"
-        ],
-        "ngebut": [
-          "shift"
-        ],
-        "klakson": [
-          "h"
-        ],
-        "horn": [
-          "h"
-        ],
-        "tin": [
+        "_like_love": [
           "h"
         ],
         "kamera": [
-          "v"
+          "c"
         ],
         "cam": [
-          "v"
+          "c"
         ],
         "view": [
-          "v"
-        ],
-        "belakang": [
           "c"
         ],
         "liat belakang": [
-          "c"
+          "e"
+        ],
+        "belakang": [
+          "e"
         ],
         "action": [
           "e"
@@ -152,17 +224,33 @@
         "masuk": [
           "e"
         ],
-        "event": [
-          "e"
+        "enter": [
+          "e",
+          "enter"
+        ],
+        "gigi naik": [
+          "o"
+        ],
+        "gear up": [
+          "o"
+        ],
+        "gigi turun": [
+          "l"
+        ],
+        "gear down": [
+          "l"
         ]
       }
     },
     "GTA V": {
       "debug_mode": true,
       "cooldown": 0.3,
-      "hold_duration": 1.0,
+      "hold_duration": 1,
       "custom_mappings": {
         "gas": [
+          "w"
+        ],
+        "gass": [
           "w"
         ],
         "maju": [
@@ -174,13 +262,60 @@
         "lari": [
           "w"
         ],
+        "ww": [
+          "w",
+          "w"
+        ],
+        "www": [
+          "w",
+          "w",
+          "w"
+        ],
+        "wwww": [
+          "w",
+          "w",
+          "w",
+          "w"
+        ],
+        "wwwww": [
+          "w",
+          "w",
+          "w",
+          "w",
+          "w"
+        ],
         "rem": [
+          "s"
+        ],
+        "stop": [
           "s"
         ],
         "mundur": [
           "s"
         ],
         "s": [
+          "s"
+        ],
+        "ss": [
+          "s",
+          "s"
+        ],
+        "sss": [
+          "s",
+          "s",
+          "s"
+        ],
+        "ssss": [
+          "s",
+          "s",
+          "s",
+          "s"
+        ],
+        "sssss": [
+          "s",
+          "s",
+          "s",
+          "s",
           "s"
         ],
         "kiri": [
@@ -228,8 +363,26 @@
           "shift",
           "w"
         ],
+        "nos": [
+          "_gift_rose"
+        ],
         "nitro": [
-          "shift"
+          "_gift_rose"
+        ],
+        "gift_rose": [
+          "_gift_rose"
+        ],
+        "bunga_mawar": [
+          "_gift_rose"
+        ],
+        "bunga mawar": [
+          "_gift_rose"
+        ],
+        "bunga mawar 1": [
+          "_gift_rose"
+        ],
+        "rose": [
+          "_gift_rose"
         ],
         "masuk": [
           "f"
@@ -250,10 +403,19 @@
           "r"
         ],
         "klakson": [
-          "e"
+          "_like_love"
         ],
         "horn": [
-          "e"
+          "_like_love"
+        ],
+        "tap": [
+          "_like_love"
+        ],
+        "love": [
+          "_like_love"
+        ],
+        "like": [
+          "_like_love"
         ],
         "hp": [
           "up"
@@ -262,7 +424,13 @@
           "up"
         ],
         "kamera": [
-          "v"
+          "_camera_key"
+        ],
+        "cam": [
+          "_camera_key"
+        ],
+        "view": [
+          "_camera_key"
         ]
       }
     },
@@ -274,13 +442,69 @@
         "maju": [
           "w"
         ],
+        "gas": [
+          "w"
+        ],
+        "gass": [
+          "w"
+        ],
         "w": [
+          "w"
+        ],
+        "ww": [
+          "w",
+          "w"
+        ],
+        "www": [
+          "w",
+          "w",
+          "w"
+        ],
+        "wwww": [
+          "w",
+          "w",
+          "w",
+          "w"
+        ],
+        "wwwww": [
+          "w",
+          "w",
+          "w",
+          "w",
           "w"
         ],
         "mundur": [
           "s"
         ],
+        "rem": [
+          "s"
+        ],
+        "stop": [
+          "s"
+        ],
         "s": [
+          "s"
+        ],
+        "ss": [
+          "s",
+          "s"
+        ],
+        "sss": [
+          "s",
+          "s",
+          "s"
+        ],
+        "ssss": [
+          "s",
+          "s",
+          "s",
+          "s"
+        ],
+        "sssss": [
+          "s",
+          "s",
+          "s",
+          "s",
           "s"
         ],
         "kiri": [
@@ -337,6 +561,24 @@
         "turun": [
           "shift"
         ],
+        "nos": [
+          "_gift_rose"
+        ],
+        "gift_rose": [
+          "_gift_rose"
+        ],
+        "bunga_mawar": [
+          "_gift_rose"
+        ],
+        "bunga mawar": [
+          "_gift_rose"
+        ],
+        "bunga mawar 1": [
+          "_gift_rose"
+        ],
+        "rose": [
+          "_gift_rose"
+        ],
         "buang": [
           "q"
         ],
@@ -351,6 +593,27 @@
         ],
         "buka": [
           "e"
+        ],
+        "klakson": [
+          "_like_love"
+        ],
+        "tap": [
+          "_like_love"
+        ],
+        "love": [
+          "_like_love"
+        ],
+        "like": [
+          "_like_love"
+        ],
+        "kamera": [
+          "_camera_key"
+        ],
+        "cam": [
+          "_camera_key"
+        ],
+        "view": [
+          "_camera_key"
         ]
       }
     }

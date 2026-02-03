@@ -101,6 +101,7 @@
             color: #fff;
             -webkit-text-stroke: 1.5px #000;
             background: linear-gradient(180deg, #ffeb3b 0%, #ff9800 100%);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-transform: uppercase;
@@ -153,6 +154,133 @@
             align-items: flex-end;
             width: 95%;
             max-width: 1200px;
+            position: relative;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* --- COCKPIT SECTION (Steering + Pedals) --- */
+        .cockpit-section {
+            display: flex;
+            align-items: flex-end;
+            gap: clamp(10px, 2vw, 30px);
+            order: -1;
+            margin-bottom: 1vh;
+            flex-basis: 100%;
+            justify-content: center;
+        }
+
+        /* Steering Wheel */
+        .steering-wheel-container {
+            position: relative;
+            width: clamp(80px, 12vw, 140px);
+            height: clamp(80px, 12vw, 140px);
+        }
+
+        .steering-wheel {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px #00eaff);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .steering-wheel.steer-left {
+            transform: rotate(-90deg);
+        }
+
+        .steering-wheel.steer-right {
+            transform: rotate(90deg);
+        }
+
+        /* Pedals Container */
+        .pedals-container {
+            display: flex;
+            gap: clamp(8px, 1.5vw, 15px);
+            align-items: flex-end;
+        }
+
+        /* Single Pedal */
+        .pedal {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(3px, 0.5vw, 5px);
+        }
+
+        .pedal-label {
+            font-size: clamp(10px, 1.2vw, 14px);
+            color: #888;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Instruction Label (MAJU, KIRI, KANAN, REM) */
+        .instruction-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(2px, 0.3vw, 3px);
+            text-align: center;
+        }
+
+        .label-text {
+            font-size: clamp(18px, 2.5vw, 32px);
+            color: #00eaff;
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 12px rgba(0, 234, 255, 0.8);
+            text-transform: uppercase;
+        }
+
+        .label-key {
+            font-size: clamp(16px, 2vw, 28px);
+            color: #fff;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 234, 255, 0.2);
+            padding: clamp(3px, 0.5vw, 6px) clamp(6px, 1vw, 12px);
+            border: 1px solid #00eaff;
+            border-radius: 4px;
+        }
+
+        .pedal-shape {
+            width: clamp(20px, 3vw, 35px);
+            height: clamp(40px, 6vw, 70px);
+            border-radius: 4px;
+            background: linear-gradient(180deg, #333, #111);
+            border: 2px solid #555;
+            box-shadow: 0 clamp(2px, 0.5vw, 5px) 0 #000;
+            transition: all 0.1s;
+            position: relative;
+        }
+
+        /* Pedal grip lines */
+        .pedal-shape::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 3px;
+            right: 3px;
+            bottom: 8px;
+            background: repeating-linear-gradient(0deg, transparent, transparent 4px, #444 4px, #444 6px);
+            border-radius: 2px;
+        }
+
+        /* Pedal Active States */
+        .pedal.gas.active .pedal-shape {
+            border-color: #00ff9d;
+            background: linear-gradient(180deg, #00ff9d, #005533);
+            box-shadow: 0 0 15px #00ff9d, 0 clamp(1px, 0.3vw, 3px) 0 #00331f;
+            transform: translateY(clamp(3px, 0.5vw, 5px)) scaleY(0.85);
+        }
+
+        .pedal.brake.active .pedal-shape {
+            border-color: #ff3d00;
+            background: linear-gradient(180deg, #ff3d00, #900);
+            box-shadow: 0 0 15px #ff3d00, 0 clamp(1px, 0.3vw, 3px) 0 #330a00;
+            transform: translateY(clamp(3px, 0.5vw, 5px)) scaleY(0.85);
         }
 
         .instruction-item {
@@ -257,6 +385,108 @@
                 transform: scale(1) translateY(-2px);
             }
         }
+
+        /* Button Activation Animations */
+        @keyframes nos-activate {
+            0% {
+                transform: scale(1) translateY(-2px);
+            }
+            25% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            50% {
+                transform: scale(1.15) translateY(-2px) rotate(2deg);
+                filter: brightness(1.5);
+            }
+            75% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            100% {
+                transform: scale(1) translateY(-2px);
+            }
+        }
+
+        @keyframes klakson-activate {
+            0% {
+                transform: scale(1) translateY(-2px);
+            }
+            25% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            50% {
+                transform: scale(1.15) translateY(-2px) rotate(2deg);
+                filter: brightness(1.5);
+            }
+            75% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            100% {
+                transform: scale(1) translateY(-2px);
+            }
+        }
+
+        @keyframes camera-activate {
+            0% {
+                transform: scale(1) translateY(-2px);
+            }
+            25% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            50% {
+                transform: scale(1.15) translateY(-2px) rotate(2deg);
+                filter: brightness(1.5);
+            }
+            75% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            100% {
+                transform: scale(1) translateY(-2px);
+            }
+        }
+
+        @keyframes drift-activate {
+            0% {
+                transform: scale(1) translateY(-2px);
+            }
+            25% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            50% {
+                transform: scale(1.15) translateY(-2px) rotate(2deg);
+                filter: brightness(1.5);
+            }
+            75% {
+                transform: scale(1.15) translateY(-2px) rotate(-2deg);
+                filter: brightness(1.5);
+            }
+            100% {
+                transform: scale(1) translateY(-2px);
+            }
+        }
+
+        /* Active state classes */
+        .instruction-item.nitro.activated .key-box {
+            animation: nos-activate 0.4s ease-in-out;
+        }
+
+        .instruction-item.klakson.activated .key-box {
+            animation: klakson-activate 0.4s ease-in-out;
+        }
+
+        .instruction-item.camera.activated .key-box {
+            animation: camera-activate 0.4s ease-in-out;
+        }
+
+        .instruction-item.drift.activated .key-box {
+            animation: drift-activate 0.4s ease-in-out;
+        }
         
         /* Pin indicator */
         .pin-indicator {
@@ -294,37 +524,107 @@
             transform: scale(1.1);
         }
         
-        /* Version and Copyright Footer */
-        .footer {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.5);
-            font-family: 'Teko', sans-serif;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-            z-index: 9998;
-            pointer-events: none;
-            line-height: 1.4;
+        /* Version and Copyright - Top Left Corner of Guide Bar */
+        .version-info {
+            position: absolute;
+            top: 0.5vh;
+            left: 1.5vw;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.5vw;
+            font-size: clamp(8px, 0.9vw, 11px);
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            text-shadow: 0 0 2px rgba(0, 0, 0, 1);
+            letter-spacing: 0.05em;
+            line-height: 1;
         }
         
-        .footer .version {
+        .version-info .version {
             color: #00eaff;
+            font-weight: 700;
+            letter-spacing: 0.05em;
         }
         
-        .footer .copyright {
-            color: rgba(255, 255, 255, 0.4);
+        .version-info .copyright {
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.05em;
+        }
+
+        /* --- SIDE PANELS (LEFT + CENTER + RIGHT) --- */
+        .panel-container {
+            display: flex;
+            gap: clamp(15px, 2vw, 25px);
+            align-items: flex-start;
+            justify-content: center;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(8px, 1vw, 12px);
+            padding: clamp(10px, 1.5vw, 20px);
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 20, 0.95) 100%);
+            border: 2px solid #00eaff;
+            border-radius: 12px;
+            min-width: clamp(120px, 15vw, 180px);
+            box-shadow: 0 0 20px rgba(0, 234, 255, 0.2);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: clamp(6px, 0.8vw, 10px);
+            font-size: clamp(14px, 1.8vw, 22px);
+            color: #00eaff;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 8px rgba(0, 234, 255, 0.6);
+        }
+
+        .panel-icon {
+            font-size: clamp(18px, 2.2vw, 28px);
+        }
+
+        .panel-content {
+            font-size: clamp(12px, 1.5vw, 18px);
+            color: #fff;
+            text-align: center;
+            word-break: break-word;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .photo-frame {
+            width: 100%;
+            aspect-ratio: 1;
+            border: 3px solid #00eaff;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #222, #111);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(32px, 4vw, 48px);
+            color: #00eaff;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 234, 255, 0.3) inset;
+        }
+
+        .center-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
     </style>
 </head>
 
 <body>
-    <!-- Version & Copyright Footer -->
-    <div class="footer">
-        <div class="version">v1.0.0</div>
-        <div class="copyright">©2026 @nandurstudio</div>
-    </div>
-    
     <!-- Pin Indicator -->
     <div class="pin-indicator pinned" id="pinIndicator" title="Click to toggle always-on-top (Ctrl+T)">📌</div>
     
@@ -344,37 +644,80 @@
     </div>
 
     <div class="guide-bar">
-        <div class="instruction-item gas">
-            <div class="action-label">MAJU<span>KETIK</span></div>
-            <div class="key-box">W</div>
+        <div class="version-info">
+            <div class="version">v1.0.0</div>
+            <div class="copyright">| ©2026 @nandurstudio</div>
         </div>
-        <div class="instruction-item brake">
-            <div class="action-label">REM<span>KETIK</span></div>
-            <div class="key-box">S</div>
-        </div>
-        <div class="instruction-item">
-            <div class="action-label">KIRI<span>KETIK</span></div>
-            <div class="key-box">A</div>
-        </div>
-        <div class="instruction-item">
-            <div class="action-label">KANAN<span>KETIK</span></div>
-            <div class="key-box">D</div>
-        </div>
-        <div class="instruction-item drift">
-            <div class="action-label">DRIFT<span>KETIK</span></div>
-            <div class="key-box">SPACE</div>
-        </div>
-        <div class="instruction-item nitro">
-            <div class="action-label" style="color:#ff0055;">NOS<span>KETIK</span></div>
-            <div class="key-box">SHIFT</div>
-        </div>
-        <div class="instruction-item util">
-            <div class="action-label">TIN<span>KETIK</span></div>
-            <div class="key-box">H</div>
-        </div>
-        <div class="instruction-item util">
-            <div class="action-label">CAM<span>KETIK</span></div>
-            <div class="key-box">V</div>
+        
+        <!-- Center Cockpit Controls -->
+        <div class="cockpit-section">
+                    <!-- Left Instructions (Gas + Left) -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: clamp(5px, 1vw, 10px);">
+                        <div class="instruction-label"><span>KOMEN</span>
+                            <div class="label-text">W/WW/WWW/GAS</div>
+                            <div class="label-key">MAJU</div>
+                        </div>
+                        <div class="pedal gas" id="pedal-gas">
+                            <div class="pedal-shape"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-label"><span>KOMEN</span>
+                        <div class="label-text">A/KIRI</div>
+                        <div class="label-key">KIRI</div>
+                    </div>
+                    
+                    <!-- Steering Wheel Center -->
+                    <div class="steering-wheel-container">
+                        <svg class="steering-wheel" id="steeringWheel" viewBox="0 0 100 100">
+                            <!-- Outer ring -->
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#333" stroke-width="12" />
+                            <!-- Neon glow arc -->
+                            <path d="M 50 5 A 45 45 0 0 1 95 50" fill="none" stroke="#00eaff" stroke-width="12" stroke-linecap="round" opacity="0.8" />
+                            <!-- Spokes -->
+                            <line x1="50" y1="15" x2="50" y2="35" stroke="#333" stroke-width="6" />
+                            <line x1="50" y1="65" x2="50" y2="85" stroke="#333" stroke-width="6" />
+                            <line x1="15" y1="50" x2="35" y2="50" stroke="#333" stroke-width="6" />
+                            <line x1="65" y1="50" x2="85" y2="50" stroke="#333" stroke-width="6" />
+                            <!-- Center hub -->
+                            <circle cx="50" cy="50" r="12" fill="#111" stroke="#555" stroke-width="2" />
+                            <circle cx="50" cy="50" r="6" fill="#00eaff" />
+                        </svg>
+                    </div>
+                    
+                    <div class="instruction-label"><span>KOMEN</span>
+                        <div class="label-text">D/KANAN</div>
+                        <div class="label-key">KANAN</div>
+                    </div>
+                    
+                    <!-- Right Instructions (Brake + Rem) -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: clamp(5px, 1vw, 10px);">
+                        <div class="instruction-label"><span>KOMEN</span>
+                            <div class="label-text">S/STOP/MUNDUR/REM</div>
+                            <div class="label-key">MUNDUR</div>
+                        </div>
+                        <div class="pedal brake" id="pedal-brake">
+                            <div class="pedal-shape"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instruction-item drift">
+                    <div class="action-label"><span>KOMEN</span>DRIFT</div>
+                    <div class="key-box">NGEDRIFT</div>
+                </div>
+                <div class="instruction-item nitro">
+                    <div class="action-label" style="color:#ff0055;">GIFT<span>MAWAR 🌹</span></div>
+                    <div class="key-box">NOS/NITRO</div>
+                </div>
+                <div class="instruction-item klakson">
+                    <div class="action-label">LIKE<span>TAP-TAP LAYAR ❤️</span></div>
+                    <div class="key-box">KLAKSON</div>
+                </div>
+                <div class="instruction-item camera">
+                    <div class="action-label"><span>KOMEN</span>C</div>
+                    <div class="key-box">KAMERA</div>
+                </div>
         </div>
     </div>
 
@@ -631,7 +974,6 @@
         ipcRenderer.on('always-on-top-changed', (event, isPinned) => {
             updatePinIndicator(isPinned);
         });
-        
         // Click on pin indicator to toggle
         pinIndicator.addEventListener('click', () => {
             toggleAlwaysOnTop();
@@ -639,6 +981,158 @@
         
         // Initialize with pinned state (default)
         updatePinIndicator(true);
+
+        // ===== COCKPIT ANIMATIONS - IPC LISTENERS FOR GIFT/LIKE EVENTS =====
+        const nitroButton = document.querySelector('.instruction-item.nitro');
+        const klaksonButton = document.querySelector('.instruction-item.klakson');
+        const driftButton = document.querySelector('.instruction-item.drift');
+        const cameraButton = document.querySelector('.instruction-item.camera');
+        const gasPedal = document.getElementById('pedal-gas');
+        const brakePedal = document.getElementById('pedal-brake');
+        const steeringWheel = document.getElementById('steeringWheel');
+        
+        console.log('🎮 Button Animation Setup:');
+        console.log('NOS/NITRO Button (Gift):', nitroButton ? '✓ Found' : '✗ Not found');
+        console.log('KLAKSON Button (Like):', klaksonButton ? '✓ Found' : '✗ Not found');
+        console.log('DRIFT Button (Space):', driftButton ? '✓ Found' : '✗ Not found');
+        console.log('CAMERA Button (V):', cameraButton ? '✓ Found' : '✗ Not found');
+        console.log('GAS Pedal:', gasPedal ? '✓ Found' : '✗ Not found');
+        console.log('BRAKE Pedal:', brakePedal ? '✓ Found' : '✗ Not found');
+        console.log('Steering Wheel:', steeringWheel ? '✓ Found' : '✗ Not found');
+        
+        // Listen for GIFT events from Python controller (Gift Mawar = NOS)
+        ipcRenderer.on('gift-event', (event, giftData) => {
+            console.log('🎁 Gift event received:', giftData);
+            console.log('🌹 NitroButton element:', nitroButton);
+            console.log('🌹 NitroButton classes before:', nitroButton ? nitroButton.className : 'NULL');
+            
+            // Python already filtered rose/mawar gift - just trigger NOS animation
+            if (nitroButton) {
+                console.log('🌹 Adding .activated class to NOS button...');
+                nitroButton.classList.add('activated');
+                console.log('🌹 NitroButton classes after:', nitroButton.className);
+                
+                // Remove class after animation completes (0.4s)
+                setTimeout(() => {
+                    nitroButton.classList.remove('activated');
+                    console.log('🌹 Removed .activated class from NOS button');
+                }, 400);
+            } else {
+                console.error('❌ NitroButton element NOT FOUND!');
+            }
+        });
+        
+        // Listen for LIKE events from Python controller (Like = KLAKSON)
+        ipcRenderer.on('like-event', (event, likeData) => {
+            console.log('❤️ Like event received:', likeData);
+            
+            console.log('❤️ Like detected - trigger KLAKSON animation');
+            if (klaksonButton) {
+                klaksonButton.classList.add('activated');
+                // Remove class after animation completes (0.4s)
+                setTimeout(() => {
+                    klaksonButton.classList.remove('activated');
+                }, 400);
+            }
+        });
+
+        // Listen for GAS pedal events from Python controller (W/WW/WWW/WWWW)
+        ipcRenderer.on('gas-event', (event, gasData) => {
+            console.log('⛽ Gas event received:', gasData);
+            
+            if (gasPedal) {
+                const intensity = gasData.intensity || 1; // 1-4 level
+                console.log(`⛽ Activating gas pedal - intensity: ${intensity}/4`);
+                
+                // Add active class to trigger green glow
+                gasPedal.classList.add('active');
+                
+                // Hold based on intensity (1-4)
+                const holdTime = 100 + (intensity * 50); // 150ms to 300ms
+                setTimeout(() => {
+                    gasPedal.classList.remove('active');
+                }, holdTime);
+            }
+        });
+
+        // Listen for BRAKE pedal events from Python controller (S/SS/SSS/SSSS)
+        ipcRenderer.on('brake-event', (event, brakeData) => {
+            console.log('🛑 Brake event received:', brakeData);
+            
+            if (brakePedal) {
+                const intensity = brakeData.intensity || 1; // 1-4 level
+                console.log(`🛑 Activating brake pedal - intensity: ${intensity}/4`);
+                
+                // Add active class to trigger red glow
+                brakePedal.classList.add('active');
+                
+                // Hold based on intensity (1-4)
+                const holdTime = 100 + (intensity * 50); // 150ms to 300ms
+                setTimeout(() => {
+                    brakePedal.classList.remove('active');
+                }, holdTime);
+            }
+        });
+
+        // Listen for STEER LEFT events from Python controller (A)
+        ipcRenderer.on('steer-left-event', (event, steerData) => {
+            console.log('◀️ Steer left event received:', steerData);
+            
+            if (steeringWheel) {
+                console.log('◀️ Steering wheel turning left');
+                steeringWheel.classList.add('steer-left');
+                
+                // Hold for 300ms
+                setTimeout(() => {
+                    steeringWheel.classList.remove('steer-left');
+                }, 300);
+            }
+        });
+
+        // Listen for STEER RIGHT events from Python controller (D)
+        ipcRenderer.on('steer-right-event', (event, steerData) => {
+            console.log('▶️ Steer right event received:', steerData);
+            
+            if (steeringWheel) {
+                console.log('▶️ Steering wheel turning right');
+                steeringWheel.classList.add('steer-right');
+                
+                // Hold for 300ms
+                setTimeout(() => {
+                    steeringWheel.classList.remove('steer-right');
+                }, 300);
+            }
+        });
+
+        // Listen for DRIFT button events from Python controller (Space)
+        ipcRenderer.on('drift-event', (event, driftData) => {
+            console.log('💨 Drift event received:', driftData);
+            
+            if (driftButton) {
+                console.log('💨 Activating drift button');
+                driftButton.classList.add('activated');
+                
+                // Hold for 400ms
+                setTimeout(() => {
+                    driftButton.classList.remove('activated');
+                }, 400);
+            }
+        });
+
+        // Listen for CAMERA button events from Python controller (V)
+        ipcRenderer.on('camera-event', (event, cameraData) => {
+            console.log('📷 Camera event received:', cameraData);
+            
+            if (cameraButton) {
+                console.log('📷 Activating camera button');
+                cameraButton.classList.add('activated');
+                
+                // Hold for 400ms
+                setTimeout(() => {
+                    cameraButton.classList.remove('activated');
+                }, 400);
+            }
+        });
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -689,6 +1183,48 @@
         console.log('   • Press Escape to hide resize indicators');
         console.log('   • Drag anywhere to move window');
         console.log('   • Right-click for menu');
+        
+        // === MANUAL TEST FUNCTIONS - Call in DevTools Console ===
+        window.testNOS = function() {
+            console.log('🧪 TEST: Triggering NOS animation manually...');
+            const btn = document.querySelector('.instruction-item.nitro');
+            console.log('Element found:', btn);
+            if (btn) {
+                btn.classList.add('activated');
+                console.log('Added .activated class');
+                setTimeout(() => {
+                    btn.classList.remove('activated');
+                    console.log('Removed .activated class');
+                }, 400);
+            } else {
+                console.error('❌ NOS button NOT FOUND!');
+            }
+        };
+        
+        window.testKlakson = function() {
+            console.log('🧪 TEST: Triggering KLAKSON animation manually...');
+            const btn = document.querySelector('.instruction-item.klakson');
+            if (btn) {
+                btn.classList.add('activated');
+                setTimeout(() => btn.classList.remove('activated'), 400);
+            }
+        };
+        
+        window.testDrift = function() {
+            console.log('🧪 TEST: Triggering DRIFT animation manually...');
+            const btn = document.querySelector('.instruction-item.drift');
+            if (btn) {
+                btn.classList.add('activated');
+                setTimeout(() => btn.classList.remove('activated'), 400);
+            }
+        };
+        
+        console.log('');
+        console.log('🧪 MANUAL TEST FUNCTIONS LOADED:');
+        console.log('   • testNOS() - Test NOS/Nitro animation');
+        console.log('   • testKlakson() - Test Klakson animation');
+        console.log('   • testDrift() - Test Drift animation');
+        console.log('');
     </script>
 
 </body>

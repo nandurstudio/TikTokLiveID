@@ -1,6 +1,10 @@
 """
 Racing Game Controller - Unified Launcher
 Single entry point: Overlay always runs + Menu to select game mode
+
+@nandurstudio
+Date Created: 2025-12-01
+Last Modified: 2026-02-03
 """
 
 import asyncio
@@ -175,14 +179,21 @@ def run_overlay_background():
         print("[INFO] 🎮 Starting live instruction overlay (Electron)...")
         
         # Start as background process (non-blocking)
-        process = subprocess.Popen(
-            [sys.executable, overlay_file],
-            cwd=script_dir,
-            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0
-        )
+        # Use PIPE instead of DEVNULL to prevent handle issues on Windows
+        # Suppress output without keeping invalid handles
+        try:
+            process = subprocess.Popen(
+                [sys.executable, overlay_file],
+                cwd=script_dir,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == 'win32' else 0
+            )
+        except Exception as e:
+            print(f"[ERROR] Failed to create process: {e}")
+            return None
         
         print("[SUCCESS] ✅ Overlay started (background)\n")
         return process
@@ -229,11 +240,15 @@ def run_real_mode(debug_mode, config_data=None, game_name=None):
             print("Setup cancelled by user")
             return
         
-        # Create controller with game name
+        # Get custom mappings for animations
+        custom_mappings = game_config.get("custom_mappings", {})
+        
+        # Create controller with game name and custom mappings
         controller = RacingGameController(
             unique_id=username,
             debug_mode=debug_mode,
-            game_name=game_name
+            game_name=game_name,
+            custom_mappings=custom_mappings
         )
         
         # Apply game-specific settings
@@ -424,6 +439,26 @@ def main():
                                 print("[INFO] Using taskkill as fallback...")
                                 subprocess.run(['taskkill', '/F', '/T', '/PID', str(overlay_process.pid)], 
                                              capture_output=True, timeout=5)
+                        except:
+                            pass
+                    finally:
+                        # Properly close the Popen handle to avoid OSError in __del__
+                        try:
+                            overlay_process.terminate()
+                        except:
+                            pass
+                        try:
+                            overlay_process.wait(timeout=1)
+                        except:
+                            pass
+                        # Close file descriptors
+                        try:
+                            if overlay_process.stdout:
+                                overlay_process.stdout.close()
+                            if overlay_process.stderr:
+                                overlay_process.stderr.close()
+                            if overlay_process.stdin:
+                                overlay_process.stdin.close()
                         except:
                             pass
                 print("[INFO] ✅ Goodbye!")
